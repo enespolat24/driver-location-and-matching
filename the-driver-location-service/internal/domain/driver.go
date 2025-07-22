@@ -49,3 +49,7 @@ func (p Point) Longitude() float64 {
 func (p Point) Latitude() float64 {
 	return p.Coordinates[1]
 }
+
+func (p Point) Distance(other Point) float64 {
+	return 00.0 // TODO: Implement distance calculation logic by using Haversine formula
+}
