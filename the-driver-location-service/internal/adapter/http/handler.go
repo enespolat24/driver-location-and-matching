@@ -113,6 +113,35 @@ func (h *DriverHandler) GetDriver(c echo.Context) error {
 	return c.JSON(http.StatusOK, driver)
 }
 
+func (h *DriverHandler) UpdateDriver(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"error":   "invalid_request",
+			"message": "Driver ID is required",
+		})
+	}
+
+	var driver domain.Driver
+	if err := c.Bind(&driver); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"error":   "invalid_request",
+			"message": "Invalid request body",
+		})
+	}
+
+	driver.ID = id
+
+	if err := h.driverService.UpdateDriver(&driver); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"error":   "internal_error",
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, driver)
+}
+
 func (h *DriverHandler) UpdateDriverLocation(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
