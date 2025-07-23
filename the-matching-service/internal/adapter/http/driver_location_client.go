@@ -81,10 +81,5 @@ func (c *DriverLocationClient) FindNearbyDrivers(ctx context.Context, location d
 		return nil, err
 	}
 
-	//print the response
-	fmt.Println("/n")
-	fmt.Println("serviceResp", serviceResp)
-	fmt.Println("/n")
-
 	return serviceResp.Drivers, nil
 }

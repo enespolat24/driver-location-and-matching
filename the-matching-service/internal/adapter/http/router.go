@@ -16,25 +16,23 @@ type Router struct {
 func NewRouter(handler *MatchHandler, cfg *config.Config) *Router {
 	e := echo.New()
 
+	// Logger, Recover ve CORS middleware'leri
 	e.Use(echoMiddleware.Logger())
 	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.CORS())
-	e.Use(middleware.JWTAuthMiddleware(cfg))
 
 	r := &Router{
 		echo:    e,
 		handler: handler,
 	}
 
-	r.setupRoutes()
+	r.setupRoutes(cfg)
 	return r
 }
 
-func (r *Router) setupRoutes() {
-
+func (r *Router) setupRoutes(cfg *config.Config) {
 	r.echo.GET("/health", r.handler.HealthCheck)
-
-	v1 := r.echo.Group("/api/v1")
+	v1 := r.echo.Group("/api/v1", middleware.JWTAuthMiddleware(cfg))
 	v1.POST("/match", r.handler.Match)
 }
 
@@ -44,4 +42,9 @@ func (r *Router) Start(address string) error {
 
 func (r *Router) Shutdown() error {
 	return r.echo.Close()
+}
+
+// GetEcho exposes the underlying Echo instance for middleware attachment
+func (r *Router) GetEcho() *echo.Echo {
+	return r.echo
 }
