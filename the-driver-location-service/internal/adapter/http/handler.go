@@ -27,6 +27,16 @@ func (h *DriverHandler) HealthCheck(c echo.Context) error {
 	})
 }
 
+// @Summary Create a driver
+// @Description Create a new driver with location
+// @Tags drivers
+// @Accept json
+// @Produce json
+// @Param driver body domain.CreateDriverRequest true "Driver info"
+// @Success 201 {object} domain.Driver
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/drivers [post]
 func (h *DriverHandler) CreateDriver(c echo.Context) error {
 	var req domain.CreateDriverRequest
 	if err := c.Bind(&req); err != nil {
@@ -47,6 +57,16 @@ func (h *DriverHandler) CreateDriver(c echo.Context) error {
 	return c.JSON(http.StatusCreated, driver)
 }
 
+// @Summary Batch create drivers
+// @Description Create multiple drivers in a single request
+// @Tags drivers
+// @Accept json
+// @Produce json
+// @Param batch body domain.BatchCreateRequest true "Batch driver info"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/drivers/batch [post]
 func (h *DriverHandler) BatchCreateDrivers(c echo.Context) error {
 	var req domain.BatchCreateRequest
 	if err := c.Bind(&req); err != nil {
@@ -70,6 +90,16 @@ func (h *DriverHandler) BatchCreateDrivers(c echo.Context) error {
 	})
 }
 
+// @Summary Search nearby drivers
+// @Description Find drivers near a given location
+// @Tags drivers
+// @Accept json
+// @Produce json
+// @Param search body domain.SearchRequest true "Search params"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/drivers/search [post]
 func (h *DriverHandler) SearchNearbyDrivers(c echo.Context) error {
 	var req domain.SearchRequest
 	if err := c.Bind(&req); err != nil {
@@ -93,6 +123,15 @@ func (h *DriverHandler) SearchNearbyDrivers(c echo.Context) error {
 	})
 }
 
+// @Summary Get driver by ID
+// @Description Get a driver by its ID
+// @Tags drivers
+// @Produce json
+// @Param id path string true "Driver ID"
+// @Success 200 {object} domain.Driver
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /api/v1/drivers/{id} [get]
 func (h *DriverHandler) GetDriver(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
@@ -113,6 +152,17 @@ func (h *DriverHandler) GetDriver(c echo.Context) error {
 	return c.JSON(http.StatusOK, driver)
 }
 
+// @Summary Update driver by ID
+// @Description Update a driver's information by ID
+// @Tags drivers
+// @Accept json
+// @Produce json
+// @Param id path string true "Driver ID"
+// @Param driver body domain.Driver true "Driver info"
+// @Success 200 {object} domain.Driver
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/drivers/{id} [put]
 func (h *DriverHandler) UpdateDriver(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
@@ -142,6 +192,17 @@ func (h *DriverHandler) UpdateDriver(c echo.Context) error {
 	return c.JSON(http.StatusOK, driver)
 }
 
+// @Summary Update driver location
+// @Description Update a driver's location by ID
+// @Tags drivers
+// @Accept json
+// @Produce json
+// @Param id path string true "Driver ID"
+// @Param location body domain.Point true "New location"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/drivers/{id}/location [patch]
 func (h *DriverHandler) UpdateDriverLocation(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
@@ -171,6 +232,15 @@ func (h *DriverHandler) UpdateDriverLocation(c echo.Context) error {
 	})
 }
 
+// @Summary Delete driver by ID
+// @Description Delete a driver by its ID
+// @Tags drivers
+// @Produce json
+// @Param id path string true "Driver ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/drivers/{id} [delete]
 func (h *DriverHandler) DeleteDriver(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {

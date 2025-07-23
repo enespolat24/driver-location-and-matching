@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"slices"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -15,13 +14,12 @@ type AuthConfig struct {
 	RequireAuth    bool   `json:"require_auth"`
 }
 
-var endpointsWithoutAuth = []string{"/health"}
-
 // APIKeyAuthMiddleware creates middleware for API key authentication
 func APIKeyAuthMiddleware(config AuthConfig) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if slices.Contains(endpointsWithoutAuth, c.Request().URL.Path) {
+			path := c.Request().URL.Path
+			if path == "/health" || path == "/" || strings.HasPrefix(path, "/swagger/") {
 				return next(c)
 			}
 

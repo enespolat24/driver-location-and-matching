@@ -5,6 +5,7 @@ import (
 	"the-driver-location-service/internal/ports/primary"
 
 	"github.com/labstack/echo/v4"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 // Router holds the HTTP router configuration
@@ -51,6 +52,7 @@ func (r *Router) setupMiddleware() {
 
 func (r *Router) setupRoutes() {
 	r.echo.GET("/health", r.handler.HealthCheck)
+	r.echo.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// API v1 routes
 	v1 := r.echo.Group("/api/v1")

@@ -1,0 +1,293 @@
+definitions:
+  domain.BatchCreateRequest:
+    properties:
+      drivers:
+        items:
+          $ref: '#/definitions/domain.CreateDriverRequest'
+        minItems: 1
+        type: array
+    required:
+    - drivers
+    type: object
+  domain.CreateDriverRequest:
+    properties:
+      id:
+        type: string
+      location:
+        $ref: '#/definitions/domain.Point'
+    required:
+    - location
+    type: object
+  domain.Driver:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      location:
+        $ref: '#/definitions/domain.Point'
+      updated_at:
+        type: string
+    required:
+    - location
+    type: object
+  domain.Point:
+    properties:
+      coordinates:
+        items:
+          type: number
+        type: array
+      type:
+        type: string
+    required:
+    - coordinates
+    - type
+    type: object
+  domain.SearchRequest:
+    properties:
+      limit:
+        minimum: 0
+        type: integer
+      location:
+        $ref: '#/definitions/domain.Point'
+      radius:
+        description: radius in meters
+        type: number
+    required:
+    - location
+    - radius
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/drivers:
+    post:
+      consumes:
+      - application/json
+      description: Create a new driver with location
+      parameters:
+      - description: Driver info
+        in: body
+        name: driver
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateDriverRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Driver'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a driver
+      tags:
+      - drivers
+  /api/v1/drivers/{id}:
+    delete:
+      description: Delete a driver by its ID
+      parameters:
+      - description: Driver ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete driver by ID
+      tags:
+      - drivers
+    get:
+      description: Get a driver by its ID
+      parameters:
+      - description: Driver ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Driver'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get driver by ID
+      tags:
+      - drivers
+    put:
+      consumes:
+      - application/json
+      description: Update a driver's information by ID
+      parameters:
+      - description: Driver ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Driver info
+        in: body
+        name: driver
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Driver'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Driver'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update driver by ID
+      tags:
+      - drivers
+  /api/v1/drivers/{id}/location:
+    patch:
+      consumes:
+      - application/json
+      description: Update a driver's location by ID
+      parameters:
+      - description: Driver ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New location
+        in: body
+        name: location
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Point'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update driver location
+      tags:
+      - drivers
+  /api/v1/drivers/batch:
+    post:
+      consumes:
+      - application/json
+      description: Create multiple drivers in a single request
+      parameters:
+      - description: Batch driver info
+        in: body
+        name: batch
+        required: true
+        schema:
+          $ref: '#/definitions/domain.BatchCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Batch create drivers
+      tags:
+      - drivers
+  /api/v1/drivers/search:
+    post:
+      consumes:
+      - application/json
+      description: Find drivers near a given location
+      parameters:
+      - description: Search params
+        in: body
+        name: search
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SearchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search nearby drivers
+      tags:
+      - drivers
+swagger: "2.0"
