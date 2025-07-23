@@ -114,6 +114,8 @@ func (r *MongoDriverRepository) BatchCreate(drivers []*domain.Driver) error {
 	return nil
 }
 
+// SearchNearby is a method that searches for nearby drivers using MongoDB's geospatial query
+// https://www.mongodb.com/docs/manual/reference/operator/query/near/
 func (r *MongoDriverRepository) SearchNearby(location domain.Point, radiusMeters float64, limit int) ([]*domain.DriverWithDistance, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
