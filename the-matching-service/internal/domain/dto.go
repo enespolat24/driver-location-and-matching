@@ -1,0 +1,34 @@
+package domain
+
+type MatchRequest struct {
+	Name     string   `json:"name"`
+	Surname  string   `json:"surname"`
+	Location Location `json:"location"`
+	Radius   float64  `json:"radius"`
+}
+
+func (r *MatchRequest) CreateRider(userID string) *Rider {
+	return NewRider(userID, r.Name, r.Surname, r.Location)
+}
+
+type MatchResponse struct {
+	Driver   Driver  `json:"driver"`
+	Distance float64 `json:"distance"`
+}
+
+func NewMatchResponse(result *MatchResult) *MatchResponse {
+	return &MatchResponse{
+		Driver:   Driver{ID: result.DriverID},
+		Distance: result.Distance,
+	}
+}
+
+type DriverDistancePair struct {
+	Driver   Driver  `json:"driver"`
+	Distance float64 `json:"distance"`
+}
+
+type DriverLocationServiceResponse struct {
+	Count   int                  `json:"count"`
+	Drivers []DriverDistancePair `json:"drivers"`
+}

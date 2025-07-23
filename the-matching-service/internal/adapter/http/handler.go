@@ -17,12 +17,6 @@ func NewMatchHandler(matchingService *application.MatchingService) *MatchHandler
 	return &MatchHandler{matchingService: matchingService}
 }
 
-type MatchRequest struct {
-	Name     string          `json:"name"`
-	Location domain.Location `json:"location"`
-	Radius   float64         `json:"radius"`
-}
-
 func (h *MatchHandler) HealthCheck(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status":  "healthy",
@@ -40,7 +34,7 @@ func (h *MatchHandler) Match(c echo.Context) error {
 	}
 	userID, _ := c.Get("user_id").(string)
 
-	var req MatchRequest
+	var req domain.MatchRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"error":   "invalid_request",
@@ -48,7 +42,7 @@ func (h *MatchHandler) Match(c echo.Context) error {
 		})
 	}
 
-	rider := domain.NewRider(userID, req.Name, req.Location)
+	rider := req.CreateRider(userID)
 	result, err := h.matchingService.MatchRiderToDriver(c.Request().Context(), *rider, req.Radius)
 	if err != nil {
 		if err.Error() == "no drivers found" {
@@ -63,5 +57,6 @@ func (h *MatchHandler) Match(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, result)
+	response := domain.NewMatchResponse(result)
+	return c.JSON(http.StatusOK, response)
 }

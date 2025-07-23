@@ -48,7 +48,8 @@ func TestMatchHandler_Success(t *testing.T) {
 	token := generateJWT(cfg.JWTSecret, claims)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
-		"name": "Enes Polat",
+		"name": "Enes",
+		"surname": "Polat",
 		"location": {"type": "Point", "coordinates": [28.9, 41.0]},
 		"radius": 500
 	}`))
