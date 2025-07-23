@@ -18,7 +18,6 @@ import (
 	httpAdapter "the-driver-location-service/internal/adapter/http"
 	"the-driver-location-service/internal/adapter/middleware"
 	"the-driver-location-service/internal/application"
-	"the-driver-location-service/internal/domain"
 	"the-driver-location-service/internal/ports/primary"
 	"the-driver-location-service/internal/ports/secondary"
 )
@@ -46,24 +45,19 @@ func main() {
 	}
 
 	var driverCache secondary.DriverCache
-	if cfg.Redis.Enabled {
-		redisClient, err := cache.NewRedisClient(cfg.Redis)
-		if err != nil {
-			log.Printf("Warning: Failed to connect to Redis: %v", err)
-			log.Println("Continuing without cache...")
-			driverCache = &NoOpCache{}
-		} else {
-			log.Println("Connected to Redis successfully")
-			driverCache = cache.NewRedisDriverCache(redisClient)
-			defer func() {
-				if err := redisClient.Close(); err != nil {
-					log.Printf("Error closing Redis connection: %v", err)
-				}
-			}()
-		}
+
+	redisClient, err := cache.NewRedisClient(cfg.Redis)
+	if err != nil {
+		log.Printf("Warning: Failed to connect to Redis: %v", err)
+		log.Println("Continuing without cache...")
 	} else {
-		log.Println("Redis caching is disabled")
-		driverCache = &NoOpCache{}
+		log.Println("Connected to Redis successfully")
+		driverCache = cache.NewRedisDriverCache(redisClient)
+		defer func() {
+			if err := redisClient.Close(); err != nil {
+				log.Printf("Error closing Redis connection: %v", err)
+			}
+		}()
 	}
 
 	var driverService primary.DriverService = application.NewDriverApplicationService(driverRepo, driverCache)
@@ -104,35 +98,4 @@ func main() {
 	}
 
 	log.Println("Server exited")
-}
-
-// NoOpCache is a no-operation cache implementation for fallback
-type NoOpCache struct{}
-
-func (c *NoOpCache) Get(ctx context.Context, driverID string) (*domain.Driver, error) {
-	return nil, nil // Always cache miss
-}
-
-func (c *NoOpCache) Set(ctx context.Context, driverID string, driver *domain.Driver, ttl time.Duration) error {
-	return nil // Do nothing
-}
-
-func (c *NoOpCache) Delete(ctx context.Context, driverID string) error {
-	return nil // Do nothing
-}
-
-func (c *NoOpCache) GetNearbyDrivers(ctx context.Context, lat, lon, radius float64, limit int) ([]*domain.DriverWithDistance, error) {
-	return nil, nil // Always cache miss
-}
-
-func (c *NoOpCache) SetNearbyDrivers(ctx context.Context, lat, lon, radius float64, limit int, drivers []*domain.DriverWithDistance, ttl time.Duration) error {
-	return nil // Do nothing
-}
-
-func (c *NoOpCache) InvalidateNearbyCache(ctx context.Context) error {
-	return nil // Do nothing
-}
-
-func (c *NoOpCache) IsHealthy(ctx context.Context) bool {
-	return true // Always healthy since it's no-op
 }
