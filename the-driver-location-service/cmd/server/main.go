@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -31,7 +30,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
-	fmt.Println(cfg.Auth.MatchingAPIKey)
 
 	if cfg.IsDevelopment() {
 		log.Println("Starting Driver Location Service in development mode...")
@@ -86,6 +84,7 @@ func main() {
 		}
 	}()
 
+	log.Println("Server is ready to accept requests.")
 	<-quit
 	log.Println("Shutting down server...")
 
