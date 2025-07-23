@@ -78,12 +78,7 @@ func LoadConfig() (*Config, error) {
 			MatchingAPIKey: getEnv("MATCHING_API_KEY", "default-matching-api-key"),
 		},
 		App: AppConfig{
-			Environment:        getEnv("ENVIRONMENT", "development"),
-			LogLevel:           getEnv("LOG_LEVEL", "info"),
-			DefaultSearchLimit: getIntEnv("DEFAULT_SEARCH_LIMIT", 10),
-			MaxSearchLimit:     getIntEnv("MAX_SEARCH_LIMIT", 100),
-			DefaultRadius:      getIntEnv("DEFAULT_RADIUS", 2000), // 2km
-			MaxRadius:          getIntEnv("MAX_RADIUS", 50000),    // 50km
+			Environment: getEnv("ENVIRONMENT", "development"),
 		},
 	}
 

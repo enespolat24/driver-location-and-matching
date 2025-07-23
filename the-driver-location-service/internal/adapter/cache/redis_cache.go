@@ -8,6 +8,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"the-driver-location-service/internal/adapter/config"
 	"the-driver-location-service/internal/domain"
 	"the-driver-location-service/internal/ports/secondary"
 )
@@ -22,6 +23,28 @@ func NewRedisDriverCache(client *redis.Client) *RedisDriverCache {
 	return &RedisDriverCache{
 		client: client,
 	}
+}
+
+func NewRedisClient(cfg config.RedisConfig) (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:         cfg.Address,
+		Password:     cfg.Password,
+		DB:           cfg.DB,
+		MaxRetries:   cfg.MaxRetries,
+		PoolSize:     cfg.PoolSize,
+		DialTimeout:  cfg.Timeout,
+		ReadTimeout:  cfg.Timeout,
+		WriteTimeout: cfg.Timeout,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout)
+	defer cancel()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+
+	return client, nil
 }
 
 func (c *RedisDriverCache) Get(ctx context.Context, driverID string) (*domain.Driver, error) {
