@@ -1,0 +1,34 @@
+package config
+
+import (
+	"os"
+)
+
+type Config struct {
+	DriverLocationBaseURL string
+	Port                  string
+	JWTSecret             string
+}
+
+func LoadConfig() *Config {
+	baseURL := os.Getenv("DRIVER_LOCATION_BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8086"
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":8087"
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "changeme"
+	}
+
+	return &Config{
+		DriverLocationBaseURL: baseURL,
+		Port:                  port,
+		JWTSecret:             jwtSecret,
+	}
+}
