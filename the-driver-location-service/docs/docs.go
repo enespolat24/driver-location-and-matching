@@ -17,6 +17,11 @@ const docTemplate = `{
     "paths": {
         "/api/v1/drivers": {
             "post": {
+                "security": [
+                    {
+                        "X-API-KEY": []
+                    }
+                ],
                 "description": "Create a new driver with location",
                 "consumes": [
                     "application/json"
@@ -35,7 +40,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.CreateDriverRequest"
+                            "$ref": "#/definitions/the-driver-location-service_internal_domain.CreateDriverRequest"
                         }
                     }
                 ],
@@ -43,7 +48,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/domain.Driver"
+                            "$ref": "#/definitions/the-driver-location-service_internal_domain.Driver"
                         }
                     },
                     "400": {
@@ -65,6 +70,11 @@ const docTemplate = `{
         },
         "/api/v1/drivers/batch": {
             "post": {
+                "security": [
+                    {
+                        "X-API-KEY": []
+                    }
+                ],
                 "description": "Create multiple drivers in a single request",
                 "consumes": [
                     "application/json"
@@ -83,7 +93,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.BatchCreateRequest"
+                            "$ref": "#/definitions/the-driver-location-service_internal_domain.BatchCreateRequest"
                         }
                     }
                 ],
@@ -114,6 +124,11 @@ const docTemplate = `{
         },
         "/api/v1/drivers/search": {
             "post": {
+                "security": [
+                    {
+                        "X-API-KEY": []
+                    }
+                ],
                 "description": "Find drivers near a given location",
                 "consumes": [
                     "application/json"
@@ -132,7 +147,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.SearchRequest"
+                            "$ref": "#/definitions/the-driver-location-service_internal_domain.SearchRequest"
                         }
                     }
                 ],
@@ -163,6 +178,11 @@ const docTemplate = `{
         },
         "/api/v1/drivers/{id}": {
             "get": {
+                "security": [
+                    {
+                        "X-API-KEY": []
+                    }
+                ],
                 "description": "Get a driver by its ID",
                 "produces": [
                     "application/json"
@@ -184,7 +204,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.Driver"
+                            "$ref": "#/definitions/the-driver-location-service_internal_domain.Driver"
                         }
                     },
                     "400": {
@@ -204,6 +224,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "X-API-KEY": []
+                    }
+                ],
                 "description": "Update a driver's information by ID",
                 "consumes": [
                     "application/json"
@@ -229,7 +254,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Driver"
+                            "$ref": "#/definitions/the-driver-location-service_internal_domain.Driver"
                         }
                     }
                 ],
@@ -237,7 +262,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.Driver"
+                            "$ref": "#/definitions/the-driver-location-service_internal_domain.Driver"
                         }
                     },
                     "400": {
@@ -257,6 +282,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "X-API-KEY": []
+                    }
+                ],
                 "description": "Delete a driver by its ID",
                 "produces": [
                     "application/json"
@@ -301,6 +331,11 @@ const docTemplate = `{
         },
         "/api/v1/drivers/{id}/location": {
             "patch": {
+                "security": [
+                    {
+                        "X-API-KEY": []
+                    }
+                ],
                 "description": "Update a driver's location by ID",
                 "consumes": [
                     "application/json"
@@ -326,7 +361,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Point"
+                            "$ref": "#/definitions/the-driver-location-service_internal_domain.Point"
                         }
                     }
                 ],
@@ -354,10 +389,34 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/health": {
+            "get": {
+                "description": "Check if the service is healthy",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check endpoint",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "domain.BatchCreateRequest": {
+        "the-driver-location-service_internal_domain.BatchCreateRequest": {
             "type": "object",
             "required": [
                 "drivers"
@@ -367,12 +426,12 @@ const docTemplate = `{
                     "type": "array",
                     "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/domain.CreateDriverRequest"
+                        "$ref": "#/definitions/the-driver-location-service_internal_domain.CreateDriverRequest"
                     }
                 }
             }
         },
-        "domain.CreateDriverRequest": {
+        "the-driver-location-service_internal_domain.CreateDriverRequest": {
             "type": "object",
             "required": [
                 "location"
@@ -382,11 +441,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "$ref": "#/definitions/domain.Point"
+                    "$ref": "#/definitions/the-driver-location-service_internal_domain.Point"
                 }
             }
         },
-        "domain.Driver": {
+        "the-driver-location-service_internal_domain.Driver": {
             "type": "object",
             "required": [
                 "location"
@@ -399,14 +458,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "$ref": "#/definitions/domain.Point"
+                    "$ref": "#/definitions/the-driver-location-service_internal_domain.Point"
                 },
                 "updated_at": {
                     "type": "string"
                 }
             }
         },
-        "domain.Point": {
+        "the-driver-location-service_internal_domain.Point": {
             "type": "object",
             "required": [
                 "coordinates",
@@ -424,7 +483,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.SearchRequest": {
+        "the-driver-location-service_internal_domain.SearchRequest": {
             "type": "object",
             "required": [
                 "location",
@@ -436,7 +495,7 @@ const docTemplate = `{
                     "minimum": 0
                 },
                 "location": {
-                    "$ref": "#/definitions/domain.Point"
+                    "$ref": "#/definitions/the-driver-location-service_internal_domain.Point"
                 },
                 "radius": {
                     "description": "radius in meters",
@@ -444,17 +503,25 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "X-API-KEY": {
+            "description": "Type X-API-KEY followed by a space and API key.",
+            "type": "apiKey",
+            "name": "X-API-KEY",
+            "in": "header"
+        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.0",
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Driver Location Service API",
+	Description:      "A service for finding nearby drivers",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

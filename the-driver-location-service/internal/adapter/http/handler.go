@@ -20,6 +20,14 @@ func NewDriverHandler(driverService primary.DriverService) *DriverHandler {
 	}
 }
 
+// HealthCheck godoc
+// @Summary Health check endpoint
+// @Description Check if the service is healthy
+// @Tags health
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /health [get]
 func (h *DriverHandler) HealthCheck(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status":  "healthy",
@@ -36,6 +44,7 @@ func (h *DriverHandler) HealthCheck(c echo.Context) error {
 // @Success 201 {object} domain.Driver
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
+// @Security X-API-KEY
 // @Router /api/v1/drivers [post]
 func (h *DriverHandler) CreateDriver(c echo.Context) error {
 	var req domain.CreateDriverRequest
@@ -66,6 +75,7 @@ func (h *DriverHandler) CreateDriver(c echo.Context) error {
 // @Success 201 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
+// @Security X-API-KEY
 // @Router /api/v1/drivers/batch [post]
 func (h *DriverHandler) BatchCreateDrivers(c echo.Context) error {
 	var req domain.BatchCreateRequest
@@ -99,6 +109,7 @@ func (h *DriverHandler) BatchCreateDrivers(c echo.Context) error {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
+// @Security X-API-KEY
 // @Router /api/v1/drivers/search [post]
 func (h *DriverHandler) SearchNearbyDrivers(c echo.Context) error {
 	var req domain.SearchRequest
@@ -131,6 +142,7 @@ func (h *DriverHandler) SearchNearbyDrivers(c echo.Context) error {
 // @Success 200 {object} domain.Driver
 // @Failure 400 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
+// @Security X-API-KEY
 // @Router /api/v1/drivers/{id} [get]
 func (h *DriverHandler) GetDriver(c echo.Context) error {
 	id := c.Param("id")
@@ -162,6 +174,7 @@ func (h *DriverHandler) GetDriver(c echo.Context) error {
 // @Success 200 {object} domain.Driver
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
+// @Security X-API-KEY
 // @Router /api/v1/drivers/{id} [put]
 func (h *DriverHandler) UpdateDriver(c echo.Context) error {
 	id := c.Param("id")
@@ -202,6 +215,7 @@ func (h *DriverHandler) UpdateDriver(c echo.Context) error {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
+// @Security X-API-KEY
 // @Router /api/v1/drivers/{id}/location [patch]
 func (h *DriverHandler) UpdateDriverLocation(c echo.Context) error {
 	id := c.Param("id")
@@ -240,6 +254,7 @@ func (h *DriverHandler) UpdateDriverLocation(c echo.Context) error {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
+// @Security X-API-KEY
 // @Router /api/v1/drivers/{id} [delete]
 func (h *DriverHandler) DeleteDriver(c echo.Context) error {
 	id := c.Param("id")

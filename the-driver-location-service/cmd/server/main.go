@@ -22,6 +22,14 @@ import (
 	"the-driver-location-service/internal/ports/secondary"
 )
 
+// @title           Driver Location Service API
+// @version         1.0
+// @description     A service for finding nearby drivers
+// @securityDefinitions.apikey X-API-KEY
+// @in header
+// @name X-API-KEY
+// @description Type X-API-KEY followed by a space and API key.
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println(".env file not found or could not be loaded, environment variables will be read from the shell")

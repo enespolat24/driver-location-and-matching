@@ -1,37 +1,37 @@
 definitions:
-  domain.BatchCreateRequest:
+  the-driver-location-service_internal_domain.BatchCreateRequest:
     properties:
       drivers:
         items:
-          $ref: '#/definitions/domain.CreateDriverRequest'
+          $ref: '#/definitions/the-driver-location-service_internal_domain.CreateDriverRequest'
         minItems: 1
         type: array
     required:
     - drivers
     type: object
-  domain.CreateDriverRequest:
+  the-driver-location-service_internal_domain.CreateDriverRequest:
     properties:
       id:
         type: string
       location:
-        $ref: '#/definitions/domain.Point'
+        $ref: '#/definitions/the-driver-location-service_internal_domain.Point'
     required:
     - location
     type: object
-  domain.Driver:
+  the-driver-location-service_internal_domain.Driver:
     properties:
       created_at:
         type: string
       id:
         type: string
       location:
-        $ref: '#/definitions/domain.Point'
+        $ref: '#/definitions/the-driver-location-service_internal_domain.Point'
       updated_at:
         type: string
     required:
     - location
     type: object
-  domain.Point:
+  the-driver-location-service_internal_domain.Point:
     properties:
       coordinates:
         items:
@@ -43,13 +43,13 @@ definitions:
     - coordinates
     - type
     type: object
-  domain.SearchRequest:
+  the-driver-location-service_internal_domain.SearchRequest:
     properties:
       limit:
         minimum: 0
         type: integer
       location:
-        $ref: '#/definitions/domain.Point'
+        $ref: '#/definitions/the-driver-location-service_internal_domain.Point'
       radius:
         description: radius in meters
         type: number
@@ -59,6 +59,9 @@ definitions:
     type: object
 info:
   contact: {}
+  description: A service for finding nearby drivers
+  title: Driver Location Service API
+  version: "1.0"
 paths:
   /api/v1/drivers:
     post:
@@ -71,14 +74,14 @@ paths:
         name: driver
         required: true
         schema:
-          $ref: '#/definitions/domain.CreateDriverRequest'
+          $ref: '#/definitions/the-driver-location-service_internal_domain.CreateDriverRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/domain.Driver'
+            $ref: '#/definitions/the-driver-location-service_internal_domain.Driver'
         "400":
           description: Bad Request
           schema:
@@ -89,6 +92,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - X-API-KEY: []
       summary: Create a driver
       tags:
       - drivers
@@ -119,6 +124,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - X-API-KEY: []
       summary: Delete driver by ID
       tags:
       - drivers
@@ -136,7 +143,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.Driver'
+            $ref: '#/definitions/the-driver-location-service_internal_domain.Driver'
         "400":
           description: Bad Request
           schema:
@@ -147,6 +154,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - X-API-KEY: []
       summary: Get driver by ID
       tags:
       - drivers
@@ -165,14 +174,14 @@ paths:
         name: driver
         required: true
         schema:
-          $ref: '#/definitions/domain.Driver'
+          $ref: '#/definitions/the-driver-location-service_internal_domain.Driver'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.Driver'
+            $ref: '#/definitions/the-driver-location-service_internal_domain.Driver'
         "400":
           description: Bad Request
           schema:
@@ -183,6 +192,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - X-API-KEY: []
       summary: Update driver by ID
       tags:
       - drivers
@@ -202,7 +213,7 @@ paths:
         name: location
         required: true
         schema:
-          $ref: '#/definitions/domain.Point'
+          $ref: '#/definitions/the-driver-location-service_internal_domain.Point'
       produces:
       - application/json
       responses:
@@ -221,6 +232,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - X-API-KEY: []
       summary: Update driver location
       tags:
       - drivers
@@ -235,7 +248,7 @@ paths:
         name: batch
         required: true
         schema:
-          $ref: '#/definitions/domain.BatchCreateRequest'
+          $ref: '#/definitions/the-driver-location-service_internal_domain.BatchCreateRequest'
       produces:
       - application/json
       responses:
@@ -254,6 +267,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - X-API-KEY: []
       summary: Batch create drivers
       tags:
       - drivers
@@ -268,7 +283,7 @@ paths:
         name: search
         required: true
         schema:
-          $ref: '#/definitions/domain.SearchRequest'
+          $ref: '#/definitions/the-driver-location-service_internal_domain.SearchRequest'
       produces:
       - application/json
       responses:
@@ -287,7 +302,31 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - X-API-KEY: []
       summary: Search nearby drivers
       tags:
       - drivers
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check if the service is healthy
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check endpoint
+      tags:
+      - health
+securityDefinitions:
+  X-API-KEY:
+    description: Type X-API-KEY followed by a space and API key.
+    in: header
+    name: X-API-KEY
+    type: apiKey
 swagger: "2.0"
