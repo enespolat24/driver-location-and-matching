@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestDriverLocationClient_FindNearbyDrivers_integration tests successful integration with driver location service
+// Expected: Should successfully find nearby drivers and return driver list with distances
 func TestDriverLocationClient_FindNearbyDrivers_integration(t *testing.T) {
 	mockHandler := func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v1/drivers/search", r.URL.Path)

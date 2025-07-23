@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestLoadConfig_Defaults tests configuration loading with default values when no environment variables are set
+// Expected: Should load default configuration values for all settings
 func TestLoadConfig_Defaults(t *testing.T) {
 	os.Unsetenv("DRIVER_LOCATION_BASE_URL")
 	os.Unsetenv("PORT")
@@ -20,6 +22,8 @@ func TestLoadConfig_Defaults(t *testing.T) {
 	assert.Equal(t, "", cfg.DriverLocationAPIKey)
 }
 
+// TestLoadConfig_EnvOverride tests configuration loading with environment variable overrides
+// Expected: Should load configuration values from environment variables when they are set
 func TestLoadConfig_EnvOverride(t *testing.T) {
 	os.Setenv("DRIVER_LOCATION_BASE_URL", "http://test-url")
 	os.Setenv("PORT", ":9999")

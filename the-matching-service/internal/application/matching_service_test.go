@@ -18,6 +18,8 @@ func (m *mockDriverLocationService) FindNearbyDrivers(ctx context.Context, locat
 	return m.FindNearbyDriversFunc(ctx, location, radius)
 }
 
+// TestMatchingService_MatchRiderToDriver_success tests successful rider to driver matching
+// Expected: Should return match result with rider ID, driver ID, and distance when drivers are available
 func TestMatchingService_MatchRiderToDriver_success(t *testing.T) {
 	mockSvc := &mockDriverLocationService{
 		FindNearbyDriversFunc: func(ctx context.Context, location domain.Location, radius float64) ([]domain.DriverDistancePair, error) {
@@ -41,6 +43,8 @@ func TestMatchingService_MatchRiderToDriver_success(t *testing.T) {
 	assert.Equal(t, 123.45, result.Distance)
 }
 
+// TestMatchingService_MatchRiderToDriver_noDrivers tests matching when no drivers are available in the area
+// Expected: Should return error with "no drivers found" message when driver list is empty
 func TestMatchingService_MatchRiderToDriver_noDrivers(t *testing.T) {
 	mockSvc := &mockDriverLocationService{
 		FindNearbyDriversFunc: func(ctx context.Context, location domain.Location, radius float64) ([]domain.DriverDistancePair, error) {
@@ -57,6 +61,8 @@ func TestMatchingService_MatchRiderToDriver_noDrivers(t *testing.T) {
 	assert.Equal(t, "no drivers found", err.Error())
 }
 
+// TestMatchingService_MatchRiderToDriver_serviceError tests error handling when external driver location service fails
+// Expected: Should return error from external service when driver location service returns an error
 func TestMatchingService_MatchRiderToDriver_serviceError(t *testing.T) {
 	mockSvc := &mockDriverLocationService{
 		FindNearbyDriversFunc: func(ctx context.Context, location domain.Location, radius float64) ([]domain.DriverDistancePair, error) {
