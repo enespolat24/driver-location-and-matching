@@ -84,7 +84,6 @@ func main() {
 		}
 	}()
 
-	log.Println("Server is ready to accept requests.")
 	<-quit
 	log.Println("Shutting down server...")
 
