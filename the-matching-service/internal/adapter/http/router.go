@@ -45,6 +45,7 @@ func (r *Router) Shutdown() error {
 }
 
 // GetEcho exposes the underlying Echo instance for middleware attachment
+// solely for testing purposes
 func (r *Router) GetEcho() *echo.Echo {
 	return r.echo
 }
