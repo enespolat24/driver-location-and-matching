@@ -56,6 +56,12 @@ func JWTAuthMiddleware(cfg *config.Config) echo.MiddlewareFunc {
 			}
 			c.Set("is_authenticated", isAuth)
 
+			if uid, ok := claims["user_id"].(string); ok {
+				c.Set("user_id", uid)
+			} else if sub, ok := claims["sub"].(string); ok {
+				c.Set("user_id", sub)
+			}
+
 			return next(c)
 		}
 	}

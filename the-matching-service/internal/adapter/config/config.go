@@ -8,6 +8,7 @@ type Config struct {
 	DriverLocationBaseURL string
 	Port                  string
 	JWTSecret             string
+	DriverLocationAPIKey  string
 }
 
 func LoadConfig() *Config {
@@ -26,9 +27,12 @@ func LoadConfig() *Config {
 		jwtSecret = "changeme"
 	}
 
+	apiKey := os.Getenv("DRIVER_LOCATION_API_KEY")
+
 	return &Config{
 		DriverLocationBaseURL: baseURL,
 		Port:                  port,
 		JWTSecret:             jwtSecret,
+		DriverLocationAPIKey:  apiKey,
 	}
 }

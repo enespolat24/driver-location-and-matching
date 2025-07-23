@@ -18,9 +18,10 @@ type DriverLocationClient struct {
 	baseURL    string
 	httpClient *http.Client
 	breaker    *gobreaker.CircuitBreaker
+	apiKey     string
 }
 
-func NewDriverLocationClient(baseURL string) *DriverLocationClient {
+func NewDriverLocationClient(baseURL, apiKey string) *DriverLocationClient {
 	cbSettings := gobreaker.Settings{
 		Name:        "DriverLocationService",
 		MaxRequests: 3,
@@ -31,6 +32,7 @@ func NewDriverLocationClient(baseURL string) *DriverLocationClient {
 		baseURL:    baseURL,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
 		breaker:    gobreaker.NewCircuitBreaker(cbSettings),
+		apiKey:     apiKey,
 	}
 }
 
@@ -52,6 +54,9 @@ func (c *DriverLocationClient) FindNearbyDrivers(ctx context.Context, location d
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/json")
+		if c.apiKey != "" {
+			req.Header.Set("X-API-Key", c.apiKey)
+		}
 
 		resp, err = c.httpClient.Do(req)
 		if err != nil {
@@ -75,5 +80,11 @@ func (c *DriverLocationClient) FindNearbyDrivers(ctx context.Context, location d
 	if err := json.NewDecoder(resp.Body).Decode(&serviceResp); err != nil {
 		return nil, err
 	}
+
+	//print the response
+	fmt.Println("/n")
+	fmt.Println("serviceResp", serviceResp)
+	fmt.Println("/n")
+
 	return serviceResp.Drivers, nil
 }

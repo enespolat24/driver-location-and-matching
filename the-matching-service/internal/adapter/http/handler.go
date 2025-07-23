@@ -38,6 +38,7 @@ func (h *MatchHandler) Match(c echo.Context) error {
 			"message": "User not authenticated",
 		})
 	}
+	userID, _ := c.Get("user_id").(string)
 
 	var req MatchRequest
 	if err := c.Bind(&req); err != nil {
@@ -47,7 +48,7 @@ func (h *MatchHandler) Match(c echo.Context) error {
 		})
 	}
 
-	rider := domain.NewRider(req.Name, req.Location)
+	rider := domain.NewRider(userID, req.Name, req.Location)
 	result, err := h.matchingService.MatchRiderToDriver(c.Request().Context(), *rider, req.Radius)
 	if err != nil {
 		if err.Error() == "no drivers found" {

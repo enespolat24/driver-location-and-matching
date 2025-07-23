@@ -17,7 +17,7 @@ func main() {
 	cfg := config.LoadConfig()
 	log.Println("cfg", cfg.JWTSecret)
 
-	client := httpadapter.NewDriverLocationClient(cfg.DriverLocationBaseURL)
+	client := httpadapter.NewDriverLocationClient(cfg.DriverLocationBaseURL, cfg.DriverLocationAPIKey)
 	service := application.NewMatchingService(client)
 	handler := httpadapter.NewMatchHandler(service)
 	router := httpadapter.NewRouter(handler, cfg)

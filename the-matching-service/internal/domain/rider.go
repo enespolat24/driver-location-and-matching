@@ -1,9 +1,5 @@
 package domain
 
-import (
-	"github.com/google/uuid"
-)
-
 // geojson
 type Location struct {
 	Type        string     `json:"type"`
@@ -17,9 +13,9 @@ type Rider struct {
 }
 
 // NewRider creates a new Rider with a generated UUID as ID
-func NewRider(name string, location Location) *Rider {
+func NewRider(ID string, name string, location Location) *Rider {
 	return &Rider{
-		ID:       uuid.NewString(),
+		ID:       ID,
 		Name:     name,
 		Location: location,
 	}
