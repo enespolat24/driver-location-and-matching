@@ -23,16 +23,16 @@ type MatchRequest struct {
 	Radius   float64         `json:"radius"`
 }
 
+func (h *MatchHandler) HealthCheck(c echo.Context) error {
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"status":  "healthy",
+		"service": "matching-service",
+	})
+}
+
 func (h *MatchHandler) Match(c echo.Context) error {
-	user := c.Get("user")
-	if user == nil {
-		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-			"error":   "unauthorized",
-			"message": "Missing or invalid token",
-		})
-	}
-	claims, ok := user.(map[string]interface{})
-	if !ok || claims["authenticated"] != true {
+	isAuth, _ := c.Get("is_authenticated").(bool)
+	if !isAuth {
 		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 			"error":   "unauthorized",
 			"message": "User not authenticated",

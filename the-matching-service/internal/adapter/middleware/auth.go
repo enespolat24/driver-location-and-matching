@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 
 	"the-matching-service/internal/adapter/config"
@@ -13,6 +14,7 @@ func JWTAuthMiddleware(cfg *config.Config) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			tokenString := c.Request().Header.Get("Authorization")
+			fmt.Println("tokenString", tokenString)
 			if tokenString == "" {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 					"error":   "unauthorized",
@@ -28,6 +30,7 @@ func JWTAuthMiddleware(cfg *config.Config) echo.MiddlewareFunc {
 				return []byte(cfg.JWTSecret), nil
 			})
 			if err != nil || !token.Valid {
+				fmt.Println("error", err)
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 					"error":   "unauthorized",
 					"message": "Invalid or expired token",
