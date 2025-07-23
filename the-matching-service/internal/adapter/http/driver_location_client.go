@@ -47,7 +47,7 @@ func (c *DriverLocationClient) FindNearbyDrivers(ctx context.Context, location d
 	var resp *http.Response
 	cbErr := error(nil)
 	_, err = c.breaker.Execute(func() (interface{}, error) {
-		req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/drivers/nearby", bytes.NewReader(bodyBytes))
+		req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/api/v1/drivers/search", bytes.NewReader(bodyBytes))
 		if err != nil {
 			return nil, err
 		}
