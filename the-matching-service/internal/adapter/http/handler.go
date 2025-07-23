@@ -42,6 +42,21 @@ func (h *MatchHandler) Match(c echo.Context) error {
 		})
 	}
 
+	// Validate the request
+	if err := domain.ValidateStruct(&req); err != nil {
+		if validationErrors, ok := err.(*domain.ValidationErrors); ok {
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"error":   "validation_error",
+				"message": "Request validation failed",
+				"details": validationErrors.Errors,
+			})
+		}
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"error":   "validation_error",
+			"message": err.Error(),
+		})
+	}
+
 	rider := req.CreateRider(userID)
 	result, err := h.matchingService.MatchRiderToDriver(c.Request().Context(), *rider, req.Radius)
 	if err != nil {

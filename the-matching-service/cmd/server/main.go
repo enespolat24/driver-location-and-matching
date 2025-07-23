@@ -5,6 +5,7 @@ import (
 	"the-matching-service/internal/adapter/config"
 	httpadapter "the-matching-service/internal/adapter/http"
 	"the-matching-service/internal/application"
+	"the-matching-service/internal/domain"
 
 	"github.com/joho/godotenv"
 )
@@ -16,6 +17,9 @@ func main() {
 
 	cfg := config.LoadConfig()
 	log.Println("cfg", cfg.JWTSecret)
+
+	_ = domain.NewCustomValidator()
+	log.Println("Custom validator initialized")
 
 	client := httpadapter.NewDriverLocationClient(cfg.DriverLocationBaseURL, cfg.DriverLocationAPIKey)
 	service := application.NewMatchingService(client)

@@ -1,10 +1,10 @@
 package domain
 
 type MatchRequest struct {
-	Name     string   `json:"name"`
-	Surname  string   `json:"surname"`
-	Location Location `json:"location"`
-	Radius   float64  `json:"radius"`
+	Name     string   `json:"name" validate:"required,min=2,max=50"`
+	Surname  string   `json:"surname" validate:"required,min=2,max=50"`
+	Location Location `json:"location" validate:"required"`
+	Radius   float64  `json:"radius" validate:"required,radius"`
 }
 
 func (r *MatchRequest) CreateRider(userID string) *Rider {

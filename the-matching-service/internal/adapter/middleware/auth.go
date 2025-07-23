@@ -12,6 +12,10 @@ import (
 func JWTAuthMiddleware(cfg *config.Config) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			if c.Path() == "/health" {
+				return next(c)
+			}
+
 			tokenString := c.Request().Header.Get("Authorization")
 			if tokenString == "" {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{

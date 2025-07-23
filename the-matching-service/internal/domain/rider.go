@@ -2,8 +2,8 @@ package domain
 
 // geojson
 type Location struct {
-	Type        string     `json:"type"`
-	Coordinates [2]float64 `json:"coordinates"`
+	Type        string     `json:"type" validate:"required,eq=Point"`
+	Coordinates [2]float64 `json:"coordinates" validate:"required,len=2,coordinates"`
 }
 
 type Rider struct {
