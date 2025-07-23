@@ -36,12 +36,7 @@ type AuthConfig struct {
 }
 
 type AppConfig struct {
-	Environment        string `json:"environment"`
-	LogLevel           string `json:"log_level"`
-	DefaultSearchLimit int    `json:"default_search_limit"`
-	MaxSearchLimit     int    `json:"max_search_limit"`
-	DefaultRadius      int    `json:"default_radius"` // in meters
-	MaxRadius          int    `json:"max_radius"`     // in meters
+	Environment string `json:"environment"`
 }
 
 type RedisConfig struct {
