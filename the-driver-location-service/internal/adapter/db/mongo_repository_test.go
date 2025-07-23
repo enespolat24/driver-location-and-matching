@@ -2,13 +2,14 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/mongodb"
+	"github.com/testcontainers/testcontainers-go/wait"
 
 	"the-driver-location-service/internal/adapter/config"
 	"the-driver-location-service/internal/domain"
@@ -17,11 +18,22 @@ import (
 func setupMongoTestRepo(t *testing.T) (*MongoDriverRepository, func()) {
 	t.Helper()
 	ctx := context.Background()
-	container, err := mongodb.RunContainer(ctx, testcontainers.WithImage("mongo:6"))
+	req := testcontainers.ContainerRequest{
+		Image:        "mongo:6",
+		ExposedPorts: []string{"27017/tcp"},
+		WaitingFor:   wait.ForListeningPort("27017/tcp").WithStartupTimeout(30 * time.Second),
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
 	require.NoError(t, err)
 
-	uri, err := container.ConnectionString(ctx)
+	host, err := container.Host(ctx)
 	require.NoError(t, err)
+	port, err := container.MappedPort(ctx, "27017")
+	require.NoError(t, err)
+	uri := fmt.Sprintf("mongodb://%s:%s", host, port.Port())
 
 	testCfg := &config.Config{
 		Database: config.DatabaseConfig{
