@@ -112,3 +112,45 @@ func TestJWTAuthMiddleware_authenticatedFalse(t *testing.T) {
 	assert.NoError(t, middleware(c))
 	assert.Equal(t, http.StatusOK, w.Code)
 }
+
+func TestJWTAuthMiddleware_HealthBypass(t *testing.T) {
+	e := echo.New()
+	cfg := &config.Config{JWTSecret: "testsecret"}
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	w := httptest.NewRecorder()
+	c := e.NewContext(req, w)
+
+	h := func(c echo.Context) error {
+		return c.String(http.StatusOK, "ok")
+	}
+
+	middleware := JWTAuthMiddleware(cfg)(h)
+	err := middleware(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestJWTAuthMiddleware_TokenWithoutBearerPrefix(t *testing.T) {
+	e := echo.New()
+	cfg := &config.Config{JWTSecret: "testsecret"}
+	claims := jwt.MapClaims{"user_id": "user-1", "authenticated": true}
+	token := generateJWT(cfg.JWTSecret, claims)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set(echo.HeaderAuthorization, token) // No "Bearer " prefix
+	w := httptest.NewRecorder()
+	c := e.NewContext(req, w)
+
+	h := func(c echo.Context) error {
+		userID := c.Get("user_id")
+		isAuth := c.Get("is_authenticated")
+		assert.Equal(t, "user-1", userID)
+		assert.Equal(t, true, isAuth)
+		return c.String(http.StatusOK, "ok")
+	}
+
+	middleware := JWTAuthMiddleware(cfg)(h)
+	assert.NoError(t, middleware(c))
+	assert.Equal(t, http.StatusOK, w.Code)
+}
