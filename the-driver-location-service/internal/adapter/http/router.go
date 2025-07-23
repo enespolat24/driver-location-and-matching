@@ -61,6 +61,7 @@ func (r *Router) setupRoutes() {
 		drivers.POST("/batch", r.handler.BatchCreateDrivers)           // Batch create drivers
 		drivers.POST("/search", r.handler.SearchNearbyDrivers)         // Search nearby drivers
 		drivers.GET("/:id", r.handler.GetDriver)                       // Get driver by ID
+		drivers.PUT("/:id", r.handler.UpdateDriver)                    // Update driver by ID
 		drivers.PATCH("/:id/location", r.handler.UpdateDriverLocation) // Update driver location
 		drivers.DELETE("/:id", r.handler.DeleteDriver)                 // Delete driver
 	}

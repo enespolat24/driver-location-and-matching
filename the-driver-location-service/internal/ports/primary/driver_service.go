@@ -7,6 +7,7 @@ type DriverService interface {
 	BatchCreateDrivers(req domain.BatchCreateRequest) ([]*domain.Driver, error)
 	SearchNearbyDrivers(req domain.SearchRequest) ([]*domain.DriverWithDistance, error)
 	GetDriver(id string) (*domain.Driver, error)
+	UpdateDriver(driver *domain.Driver) error
 	UpdateDriverLocation(id string, location domain.Point) error
 	DeleteDriver(id string) error
 }
