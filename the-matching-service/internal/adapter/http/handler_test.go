@@ -2,6 +2,7 @@ package httpadapter
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -26,6 +27,12 @@ func (m *mockDriverLocationServiceForHandler) FindNearbyDrivers(ctx context.Cont
 			Distance: 100,
 		},
 	}, nil
+}
+
+type mockDriverLocationServiceForHandlerNoDrivers struct{}
+
+func (m *mockDriverLocationServiceForHandlerNoDrivers) FindNearbyDrivers(ctx context.Context, location domain.Location, radius float64) ([]domain.DriverDistancePair, error) {
+	return []domain.DriverDistancePair{}, nil
 }
 
 func generateJWT(secret string, claims jwt.MapClaims) string {
@@ -96,4 +103,163 @@ func TestMatchHandler_ValidationError(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "validation_error")
 	assert.Contains(t, w.Body.String(), "Request validation failed")
+}
+
+// TestMatchHandler_NoDriversFound tests the 404 response when no drivers are found nearby
+// Expected: HTTP 404 Not Found with "No drivers found nearby" message when no drivers match criteria
+func TestMatchHandler_NoDriversFound(t *testing.T) {
+	cfg := &config.Config{JWTSecret: "testsecret"}
+
+	// Mock service that returns no drivers
+	mockService := &mockDriverLocationServiceForHandlerNoDrivers{}
+	matchingService := application.NewMatchingService(mockService)
+	handler := NewMatchHandler(matchingService)
+
+	e := echo.New()
+	e.Use(middleware.JWTAuthMiddleware(cfg))
+	e.POST("/api/v1/match", handler.Match)
+
+	claims := jwt.MapClaims{"user_id": "user-1", "authenticated": true}
+	token := generateJWT(cfg.JWTSecret, claims)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
+		"name": "Enes",
+		"surname": "Polat",
+		"location": {"type": "Point", "coordinates": [28.9, 41.0]},
+		"radius": 500
+	}`))
+	req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Contains(t, w.Body.String(), "not_found")
+	assert.Contains(t, w.Body.String(), "No drivers found nearby")
+}
+
+// TestMatchHandler_GeoJSONPointSearch_NoDriversFound tests 404 response for GeoJSON point search with no matching drivers
+// Expected: HTTP 404 Not Found when searching with valid GeoJSON Point coordinates but no drivers match criteria
+func TestMatchHandler_GeoJSONPointSearch_NoDriversFound(t *testing.T) {
+	cfg := &config.Config{JWTSecret: "testsecret"}
+
+	mockService := &mockDriverLocationServiceForHandlerNoDrivers{}
+	matchingService := application.NewMatchingService(mockService)
+	handler := NewMatchHandler(matchingService)
+
+	e := echo.New()
+	e.Use(middleware.JWTAuthMiddleware(cfg))
+	e.POST("/api/v1/match", handler.Match)
+
+	claims := jwt.MapClaims{"user_id": "user-1", "authenticated": true}
+	token := generateJWT(cfg.JWTSecret, claims)
+
+	testCases := []struct {
+		name        string
+		coordinates [2]float64
+		radius      float64
+		description string
+	}{
+		{
+			name:        "Istanbul coordinates",
+			coordinates: [2]float64{28.9, 41.0},
+			radius:      500,
+			description: "Istanbul area search",
+		},
+		{
+			name:        "New York coordinates",
+			coordinates: [2]float64{-73.856077, 40.848447},
+			radius:      1000,
+			description: "New York area search",
+		},
+		{
+			name:        "London coordinates",
+			coordinates: [2]float64{-0.1276, 51.5074},
+			radius:      2000,
+			description: "London area search",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			reqBody := fmt.Sprintf(`{
+				"name": "Test",
+				"surname": "User",
+				"location": {"type": "Point", "coordinates": [%f, %f]},
+				"radius": %f
+			}`, tc.coordinates[0], tc.coordinates[1], tc.radius)
+
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(reqBody))
+			req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			w := httptest.NewRecorder()
+
+			e.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusNotFound, w.Code, "Should return 404 for %s", tc.description)
+			assert.Contains(t, w.Body.String(), "not_found", "Should contain not_found error for %s", tc.description)
+			assert.Contains(t, w.Body.String(), "No drivers found nearby", "Should contain correct message for %s", tc.description)
+		})
+	}
+}
+
+// TestMatchHandler_GeoJSONPointSearch_Success tests successful driver matching with GeoJSON Point coordinates
+// Expected: HTTP 200 OK with driver match when searching with valid GeoJSON Point coordinates and drivers are found
+func TestMatchHandler_GeoJSONPointSearch_Success(t *testing.T) {
+	cfg := &config.Config{JWTSecret: "testsecret"}
+
+	// Mock service that returns drivers for GeoJSON point search
+	mockService := &mockDriverLocationServiceForHandler{}
+	matchingService := application.NewMatchingService(mockService)
+	handler := NewMatchHandler(matchingService)
+
+	e := echo.New()
+	e.Use(middleware.JWTAuthMiddleware(cfg))
+	e.POST("/api/v1/match", handler.Match)
+
+	claims := jwt.MapClaims{"user_id": "user-1", "authenticated": true}
+	token := generateJWT(cfg.JWTSecret, claims)
+
+	testCases := []struct {
+		name        string
+		coordinates [2]float64
+		radius      float64
+		description string
+	}{
+		{
+			name:        "Istanbul coordinates with drivers",
+			coordinates: [2]float64{28.9, 41.0},
+			radius:      500,
+			description: "Istanbul area search with available drivers",
+		},
+		{
+			name:        "New York coordinates with drivers",
+			coordinates: [2]float64{-73.856077, 40.848447},
+			radius:      1000,
+			description: "New York area search with available drivers",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			reqBody := fmt.Sprintf(`{
+				"name": "Test",
+				"surname": "User",
+				"location": {"type": "Point", "coordinates": [%f, %f]},
+				"radius": %f
+			}`, tc.coordinates[0], tc.coordinates[1], tc.radius)
+
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(reqBody))
+			req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			w := httptest.NewRecorder()
+
+			e.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code, "Should return 200 for %s", tc.description)
+			assert.Contains(t, w.Body.String(), "driver-1", "Should contain driver ID for %s", tc.description)
+			assert.Contains(t, w.Body.String(), "distance", "Should contain distance field for %s", tc.description)
+		})
+	}
 }
