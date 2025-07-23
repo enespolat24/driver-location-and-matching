@@ -73,3 +73,70 @@ func TestMongoDriverRepository_CreateAndGetByID(t *testing.T) {
 	assert.Equal(t, drv.Location.Longitude(), got.Location.Longitude())
 	assert.Equal(t, drv.Location.Latitude(), got.Location.Latitude())
 }
+
+func TestMongoDriverRepository_Update(t *testing.T) {
+	repo, cleanup := setupMongoTestRepo(t)
+	defer cleanup()
+
+	drv := &domain.Driver{ID: "driver2", Location: domain.NewPoint(10, 10)}
+	require.NoError(t, repo.Create(drv))
+
+	drv.Location = domain.NewPoint(20, 20)
+	require.NoError(t, repo.Update(drv))
+
+	got, err := repo.GetByID(drv.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 20.0, got.Location.Longitude())
+	assert.Equal(t, 20.0, got.Location.Latitude())
+}
+
+func TestMongoDriverRepository_Delete(t *testing.T) {
+	repo, cleanup := setupMongoTestRepo(t)
+	defer cleanup()
+
+	drv := &domain.Driver{ID: "driver3", Location: domain.NewPoint(30, 30)}
+	require.NoError(t, repo.Create(drv))
+	require.NoError(t, repo.Delete(drv.ID))
+	_, err := repo.GetByID(drv.ID)
+	assert.Error(t, err)
+}
+
+func TestMongoDriverRepository_BatchCreate(t *testing.T) {
+	repo, cleanup := setupMongoTestRepo(t)
+	defer cleanup()
+
+	drivers := []*domain.Driver{
+		{ID: "b1", Location: domain.NewPoint(1, 1)},
+		{ID: "b2", Location: domain.NewPoint(2, 2)},
+	}
+	require.NoError(t, repo.BatchCreate(drivers))
+	for _, d := range drivers {
+		got, err := repo.GetByID(d.ID)
+		require.NoError(t, err)
+		assert.Equal(t, d.Location.Longitude(), got.Location.Longitude())
+	}
+}
+
+func TestMongoDriverRepository_SearchNearby(t *testing.T) {
+	repo, cleanup := setupMongoTestRepo(t)
+	defer cleanup()
+
+	drivers := []*domain.Driver{
+		{ID: "s1", Location: domain.NewPoint(10, 10)},
+		{ID: "s2", Location: domain.NewPoint(10.001, 10.001)},
+		{ID: "s3", Location: domain.NewPoint(20, 20)},
+	}
+	require.NoError(t, repo.BatchCreate(drivers))
+
+	center := domain.NewPoint(10, 10)
+	// 200m radius should find s1 and s2, but not s3
+	found, err := repo.SearchNearby(center, 200, 10)
+	require.NoError(t, err)
+	ids := make([]string, 0, len(found))
+	for _, d := range found {
+		ids = append(ids, d.Driver.ID)
+	}
+	assert.Contains(t, ids, "s1")
+	assert.Contains(t, ids, "s2")
+	assert.NotContains(t, ids, "s3")
+}
