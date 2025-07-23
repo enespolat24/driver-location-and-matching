@@ -1,9 +1,10 @@
 package domain
 
-// geojson
+// Location represents a GeoJSON Point location
+// @Description GeoJSON Point location with longitude and latitude coordinates
 type Location struct {
-	Type        string     `json:"type" validate:"required,eq=Point"`
-	Coordinates [2]float64 `json:"coordinates" validate:"required,len=2,coordinates"`
+	Type        string     `json:"type" validate:"required,eq=Point" example:"Point" description:"GeoJSON type, must be 'Point'"`
+	Coordinates [2]float64 `json:"coordinates" validate:"required,len=2,coordinates" example:"28.9784,41.0082" description:"Array of [longitude, latitude] coordinates"`
 }
 
 type Rider struct {

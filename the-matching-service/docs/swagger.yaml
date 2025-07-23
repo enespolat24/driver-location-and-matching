@@ -1,0 +1,129 @@
+basePath: /api/v1
+definitions:
+  the-matching-service_internal_domain.Location:
+    description: GeoJSON Point location with longitude and latitude coordinates
+    properties:
+      coordinates:
+        example:
+        - 28.9784
+        - 41.0082
+        items:
+          type: number
+        type: array
+      type:
+        example: Point
+        type: string
+    required:
+    - coordinates
+    - type
+    type: object
+  the-matching-service_internal_domain.MatchRequest:
+    description: Request to find a nearby driver for a rider
+    properties:
+      location:
+        $ref: '#/definitions/the-matching-service_internal_domain.Location'
+      name:
+        example: John
+        maxLength: 50
+        minLength: 2
+        type: string
+      radius:
+        example: 500
+        type: number
+      surname:
+        example: Doe
+        maxLength: 50
+        minLength: 2
+        type: string
+    required:
+    - location
+    - name
+    - radius
+    - surname
+    type: object
+  the-matching-service_internal_domain.MatchResponse:
+    description: Response containing matched driver information
+    properties:
+      distance:
+        example: 250.5
+        type: number
+      driver:
+        example: driver-123
+        type: string
+      rider:
+        example: rider-456
+        type: string
+    type: object
+info:
+  contact: {}
+  description: A service for matching riders with nearby drivers
+  title: Matching Service API
+  version: "1.0"
+paths:
+  /api/v1/match:
+    post:
+      consumes:
+      - application/json
+      description: Find the nearest driver for a rider based on location and radius
+      parameters:
+      - description: Match request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/the-matching-service_internal_domain.MatchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/the-matching-service_internal_domain.MatchResponse'
+        "400":
+          description: Bad Request - Validation error or invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized - User not authenticated
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found - No drivers found nearby
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Match rider with nearby driver
+      tags:
+      - matching
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check if the service is healthy
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check endpoint
+      tags:
+      - health
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

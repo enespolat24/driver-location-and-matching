@@ -17,6 +17,14 @@ func NewMatchHandler(matchingService *application.MatchingService) *MatchHandler
 	return &MatchHandler{matchingService: matchingService}
 }
 
+// HealthCheck godoc
+// @Summary Health check endpoint
+// @Description Check if the service is healthy
+// @Tags health
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /health [get]
 func (h *MatchHandler) HealthCheck(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status":  "healthy",
@@ -24,6 +32,20 @@ func (h *MatchHandler) HealthCheck(c echo.Context) error {
 	})
 }
 
+// Match godoc
+// @Summary Match rider with nearby driver
+// @Description Find the nearest driver for a rider based on location and radius
+// @Tags matching
+// @Accept json
+// @Produce json
+// @Param request body domain.MatchRequest true "Match request"
+// @Success 200 {object} domain.MatchResponse
+// @Failure 400 {object} map[string]interface{} "Bad Request - Validation error or invalid request"
+// @Failure 401 {object} map[string]interface{} "Unauthorized - User not authenticated"
+// @Failure 404 {object} map[string]interface{} "Not Found - No drivers found nearby"
+// @Failure 500 {object} map[string]interface{} "Internal Server Error"
+// @Security BearerAuth
+// @Router /api/v1/match [post]
 func (h *MatchHandler) Match(c echo.Context) error {
 	isAuth, _ := c.Get("is_authenticated").(bool)
 	if !isAuth {

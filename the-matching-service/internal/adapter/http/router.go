@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 type Router struct {
@@ -31,7 +32,10 @@ func NewRouter(handler *MatchHandler, cfg *config.Config) *Router {
 }
 
 func (r *Router) setupRoutes(cfg *config.Config) {
+	r.echo.GET("/swagger/*", echoSwagger.WrapHandler)
 	r.echo.GET("/health", r.handler.HealthCheck)
+
+	// routes with authentication
 	v1 := r.echo.Group("/api/v1", middleware.JWTAuthMiddleware(cfg))
 	v1.POST("/match", r.handler.Match)
 }
