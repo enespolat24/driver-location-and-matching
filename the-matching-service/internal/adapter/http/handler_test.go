@@ -2,6 +2,7 @@ package httpadapter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -33,6 +34,12 @@ type mockDriverLocationServiceForHandlerNoDrivers struct{}
 
 func (m *mockDriverLocationServiceForHandlerNoDrivers) FindNearbyDrivers(ctx context.Context, location domain.Location, radius float64) ([]domain.DriverDistancePair, error) {
 	return []domain.DriverDistancePair{}, nil
+}
+
+type mockDriverLocationServiceForHandlerError struct{}
+
+func (m *mockDriverLocationServiceForHandlerError) FindNearbyDrivers(ctx context.Context, location domain.Location, radius float64) ([]domain.DriverDistancePair, error) {
+	return nil, errors.New("database connection failed")
 }
 
 func generateJWT(secret string, claims jwt.MapClaims) string {
@@ -70,6 +77,8 @@ func TestMatchHandler_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "driver-1")
+	assert.Contains(t, w.Body.String(), "user-1")
+	assert.Contains(t, w.Body.String(), "distance")
 }
 
 // TestMatchHandler_ValidationError tests validation error handling with invalid request data
@@ -103,6 +112,99 @@ func TestMatchHandler_ValidationError(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "validation_error")
 	assert.Contains(t, w.Body.String(), "Request validation failed")
+}
+
+// TestMatchHandler_Unauthorized tests unauthorized access without authentication
+// Expected: HTTP 401 Unauthorized when user is not authenticated
+func TestMatchHandler_Unauthorized(t *testing.T) {
+	cfg := &config.Config{JWTSecret: "testsecret"}
+	mockService := &mockDriverLocationServiceForHandler{}
+	matchingService := application.NewMatchingService(mockService)
+	handler := NewMatchHandler(matchingService)
+
+	e := echo.New()
+	e.Use(middleware.JWTAuthMiddleware(cfg))
+	e.POST("/api/v1/match", handler.Match)
+
+	// Request without authentication token
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
+		"name": "Enes",
+		"surname": "Polat",
+		"location": {"type": "Point", "coordinates": [28.9, 41.0]},
+		"radius": 500
+	}`))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Contains(t, w.Body.String(), "unauthorized")
+}
+
+// TestMatchHandler_InvalidRequestBody tests handling of invalid request body
+// Expected: HTTP 400 Bad Request when request body cannot be parsed
+func TestMatchHandler_InvalidRequestBody(t *testing.T) {
+	cfg := &config.Config{JWTSecret: "testsecret"}
+	mockService := &mockDriverLocationServiceForHandler{}
+	matchingService := application.NewMatchingService(mockService)
+	handler := NewMatchHandler(matchingService)
+
+	e := echo.New()
+	e.Use(middleware.JWTAuthMiddleware(cfg))
+	e.POST("/api/v1/match", handler.Match)
+
+	claims := jwt.MapClaims{"user_id": "user-1", "authenticated": true}
+	token := generateJWT(cfg.JWTSecret, claims)
+
+	// Invalid JSON request body
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
+		"name": "Enes",
+		"surname": "Polat",
+		"location": {"type": "Point", "coordinates": [28.9, 41.0]},
+		"radius": 500,
+	`)) // Missing closing brace
+	req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "invalid_request")
+}
+
+// TestMatchHandler_InternalServerError tests handling of internal server errors
+// Expected: HTTP 500 Internal Server Error when matching service returns unexpected error
+func TestMatchHandler_InternalServerError(t *testing.T) {
+	cfg := &config.Config{JWTSecret: "testsecret"}
+
+	// Mock service that returns error
+	mockService := &mockDriverLocationServiceForHandlerError{}
+	matchingService := application.NewMatchingService(mockService)
+	handler := NewMatchHandler(matchingService)
+
+	e := echo.New()
+	e.Use(middleware.JWTAuthMiddleware(cfg))
+	e.POST("/api/v1/match", handler.Match)
+
+	claims := jwt.MapClaims{"user_id": "user-1", "authenticated": true}
+	token := generateJWT(cfg.JWTSecret, claims)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
+		"name": "Enes",
+		"surname": "Polat",
+		"location": {"type": "Point", "coordinates": [28.9, 41.0]},
+		"radius": 500
+	}`))
+	req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	w := httptest.NewRecorder()
+
+	e.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "internal_error")
 }
 
 // TestMatchHandler_NoDriversFound tests the 404 response when no drivers are found nearby
@@ -259,6 +361,7 @@ func TestMatchHandler_GeoJSONPointSearch_Success(t *testing.T) {
 
 			assert.Equal(t, http.StatusOK, w.Code, "Should return 200 for %s", tc.description)
 			assert.Contains(t, w.Body.String(), "driver-1", "Should contain driver ID for %s", tc.description)
+			assert.Contains(t, w.Body.String(), "user-1", "Should contain rider ID for %s", tc.description)
 			assert.Contains(t, w.Body.String(), "distance", "Should contain distance field for %s", tc.description)
 		})
 	}
