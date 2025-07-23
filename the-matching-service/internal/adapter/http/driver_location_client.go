@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -58,7 +58,7 @@ func (c *DriverLocationClient) FindNearbyDrivers(ctx context.Context, location d
 			return nil, err
 		}
 		if resp.StatusCode != http.StatusOK {
-			b, _ := ioutil.ReadAll(resp.Body)
+			b, _ := io.ReadAll(resp.Body)
 			return nil, fmt.Errorf("unexpected status: %d, body: %s", resp.StatusCode, string(b))
 		}
 		return nil, nil
