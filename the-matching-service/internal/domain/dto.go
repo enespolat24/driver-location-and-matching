@@ -12,13 +12,15 @@ func (r *MatchRequest) CreateRider(userID string) *Rider {
 }
 
 type MatchResponse struct {
-	Driver   Driver  `json:"driver"`
+	Driver   string  `json:"driver"`
+	Rider    string  `json:"rider"`
 	Distance float64 `json:"distance"`
 }
 
 func NewMatchResponse(result *MatchResult) *MatchResponse {
 	return &MatchResponse{
-		Driver:   Driver{ID: result.DriverID},
+		Driver:   result.DriverID,
+		Rider:    result.RiderID,
 		Distance: result.Distance,
 	}
 }

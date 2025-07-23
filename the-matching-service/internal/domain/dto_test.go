@@ -33,7 +33,8 @@ func TestNewMatchResponse(t *testing.T) {
 
 	response := NewMatchResponse(result)
 
-	assert.Equal(t, result.DriverID, response.Driver.ID)
+	assert.Equal(t, result.DriverID, response.Driver)
+	assert.Equal(t, result.RiderID, response.Rider)
 	assert.Equal(t, result.Distance, response.Distance)
 }
 
@@ -51,7 +52,8 @@ func TestMatchRequest_JSONTags(t *testing.T) {
 
 func TestMatchResponse_JSONTags(t *testing.T) {
 	response := &MatchResponse{
-		Driver:   Driver{ID: "driver-123"},
+		Driver:   "driver-123",
+		Rider:    "rider-456",
 		Distance: 200.0,
 	}
 
