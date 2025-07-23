@@ -15,6 +15,7 @@ type Router struct {
 }
 
 // NewRouter creates a new HTTP router
+// this is dependent to echo framework. todo: make it independent
 func NewRouter(driverService primary.DriverService, authConfig middleware.AuthConfig) *Router {
 	e := echo.New()
 	handler := NewDriverHandler(driverService)
