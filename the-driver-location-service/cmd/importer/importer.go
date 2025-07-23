@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 
 	"the-driver-location-service/internal/adapter/config"
 	"the-driver-location-service/internal/adapter/db"
@@ -16,6 +17,7 @@ import (
 const (
 	CSV_FILE_PATH = "Coordinates.csv"
 	BATCH_SIZE    = 100
+	NUM_WORKERS   = 4
 )
 
 func main() {
@@ -41,14 +43,16 @@ func main() {
 
 	driverService := application.NewDriverApplicationService(driverRepo, nil)
 
-	if err := importData(driverService); err != nil {
+	if err := importDataConcurrent(driverService); err != nil {
 		log.Fatalf("Import failed: %v", err)
 	}
 
 	log.Println("Driver location import completed successfully.")
 }
 
-func importData(service *application.DriverApplicationService) error {
+// i implemented worker pool pattern to import data concurrently
+// because i was asked about it in the interview
+func importDataConcurrent(service *application.DriverApplicationService) error {
 	file, err := os.Open(CSV_FILE_PATH)
 	if err != nil {
 		return fmt.Errorf("failed to open CSV file: %v", err)
@@ -59,6 +63,23 @@ func importData(service *application.DriverApplicationService) error {
 
 	if _, err := reader.Read(); err != nil {
 		return fmt.Errorf("failed to read CSV header: %v", err)
+	}
+
+	batchCh := make(chan []domain.CreateDriverRequest)
+	errCh := make(chan error, 100)
+	var wg sync.WaitGroup
+
+	for i := 0; i < NUM_WORKERS; i++ {
+		wg.Add(1) // go 1.25
+		go func(workerID int) {
+			defer wg.Done()
+			for batch := range batchCh {
+				if err := processBatch(service, batch); err != nil {
+					log.Printf("Worker %d: Error processing batch: %v", workerID, err)
+					errCh <- err
+				}
+			}
+		}(i)
 	}
 
 	var batch []domain.CreateDriverRequest
@@ -86,22 +107,24 @@ func importData(service *application.DriverApplicationService) error {
 		batch = append(batch, driverReq)
 
 		if len(batch) >= BATCH_SIZE {
-			if err := processBatch(service, batch); err != nil {
-				log.Printf("Error processing batch: %v", err)
-				errorCount += len(batch)
-			} else {
-				successCount += len(batch)
-			}
+			batchCh <- batch
+			successCount += len(batch)
 			batch = nil
 		}
 	}
 
 	if len(batch) > 0 {
-		if err := processBatch(service, batch); err != nil {
-			log.Printf("Error processing final batch: %v", err)
-			errorCount += len(batch)
-		} else {
-			successCount += len(batch)
+		batchCh <- batch
+		successCount += len(batch)
+	}
+
+	close(batchCh)
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		if err != nil {
+			errorCount++
 		}
 	}
 
