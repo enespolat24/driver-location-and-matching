@@ -4,7 +4,9 @@ import (
 	"the-driver-location-service/internal/adapter/middleware"
 	"the-driver-location-service/internal/ports/primary"
 
+	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
+	echomiddleware "github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
@@ -34,15 +36,16 @@ func NewRouter(driverService primary.DriverService, authConfig middleware.AuthCo
 }
 
 func (r *Router) setupMiddleware() {
-	r.echo.Use(middleware.LoggingMiddleware())
-	r.echo.Use(middleware.RecoveryMiddleware())
-	r.echo.Use(middleware.CORSMiddleware())
+	r.echo.Use(echomiddleware.Logger())
+	r.echo.Use(echomiddleware.Recover())
+	r.echo.Use(echomiddleware.CORS())
+	r.echo.Use(echoprometheus.NewMiddleware("driver_location_service"))
 
 	auth := middleware.APIKeyAuthMiddleware(r.config)
 
 	r.echo.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if c.Request().URL.Path == "/health" || c.Request().URL.Path == "/" {
+			if c.Request().URL.Path == "/health" || c.Request().URL.Path == "/" || c.Request().URL.Path == "/metrics" {
 				return next(c)
 			}
 			return auth(next)(c)
@@ -52,6 +55,7 @@ func (r *Router) setupMiddleware() {
 
 func (r *Router) setupRoutes() {
 	r.echo.GET("/health", r.handler.HealthCheck)
+	r.echo.GET("/metrics", echoprometheus.NewHandler())
 	r.echo.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// API v1 routes

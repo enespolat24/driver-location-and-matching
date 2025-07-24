@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Driver Location Service
+  - job_name: 'driver-location-service'
+    static_configs:
+      - targets: ['driver-location-service:8087']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Matching Service
+  - job_name: 'matching-service'
+    static_configs:
+      - targets: ['matching-service:8088']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s 
