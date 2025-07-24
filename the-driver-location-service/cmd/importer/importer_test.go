@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -115,5 +116,31 @@ func TestProcessBatchHTTP_HTTPError(t *testing.T) {
 	err := processBatchHTTP(batch)
 	if err == nil {
 		t.Error("Expected error for unreachable server, got nil")
+	}
+}
+
+// TestGetenvOrDefault tests environment variable fallback logic
+// Expected: Should return environment value when set, default when not set
+func TestGetenvOrDefault(t *testing.T) {
+	// Test default value when env var not set
+	result := getenvOrDefault("NON_EXISTENT_VAR", "default")
+	if result != "default" {
+		t.Errorf("Expected 'default', got %s", result)
+	}
+
+	// Test environment value when set
+	os.Setenv("TEST_VAR", "env_value")
+	defer os.Unsetenv("TEST_VAR")
+	result = getenvOrDefault("TEST_VAR", "default")
+	if result != "env_value" {
+		t.Errorf("Expected 'env_value', got %s", result)
+	}
+
+	// Test empty environment value falls back to default
+	os.Setenv("EMPTY_VAR", "")
+	defer os.Unsetenv("EMPTY_VAR")
+	result = getenvOrDefault("EMPTY_VAR", "default")
+	if result != "default" {
+		t.Errorf("Expected 'default' for empty env var, got %s", result)
 	}
 }

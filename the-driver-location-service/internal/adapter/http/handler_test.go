@@ -242,3 +242,71 @@ func TestDeleteDriver_Success(t *testing.T) {
 	assert.Contains(t, rec.Body.String(), "deleted successfully")
 	mockService.AssertExpectations(t)
 }
+
+// TestCreateDriver_ValidationError tests validation error handling in CreateDriver
+// Expected: Should return 500 when validation fails (since service validation errors are treated as internal errors)
+func TestCreateDriver_ValidationError(t *testing.T) {
+	mockService := new(MockDriverService)
+	handler := NewDriverHandler(mockService)
+	e := echo.New()
+	body := `{"id":"","location":{"type":"InvalidType","coordinates":[181,91]}}` // Invalid data
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	validationErr := errors.New("validation error: invalid location type")
+	mockService.On("CreateDriver", mock.Anything).Return((*domain.Driver)(nil), validationErr)
+
+	err := handler.CreateDriver(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Contains(t, rec.Body.String(), "internal_error")
+	mockService.AssertExpectations(t)
+}
+
+// TestSearchNearbyDrivers_ValidationError tests validation error in search
+// Expected: Should return 500 when search validation fails
+func TestSearchNearbyDrivers_ValidationError(t *testing.T) {
+	mockService := new(MockDriverService)
+	handler := NewDriverHandler(mockService)
+	e := echo.New()
+	body := `{"location":{"type":"Point","coordinates":[181,91]},"radius":-100,"limit":-1}` // Invalid data
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers/search", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	validationErr := errors.New("validation error: invalid coordinates")
+	mockService.On("SearchNearbyDrivers", mock.Anything).Return(([]*domain.DriverWithDistance)(nil), validationErr)
+
+	err := handler.SearchNearbyDrivers(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Contains(t, rec.Body.String(), "internal_error")
+	mockService.AssertExpectations(t)
+}
+
+// TestUpdateDriverLocation_ValidationError tests location validation error
+// Expected: Should return 500 when location validation fails
+func TestUpdateDriverLocation_ValidationError(t *testing.T) {
+	mockService := new(MockDriverService)
+	handler := NewDriverHandler(mockService)
+	e := echo.New()
+	body := `{"type":"InvalidType","coordinates":[181,91]}` // Invalid location
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/drivers/d1/location", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("id")
+	c.SetParamValues("d1")
+
+	validationErr := errors.New("validation error: invalid location type")
+	mockService.On("UpdateDriverLocation", "d1", mock.Anything).Return(validationErr)
+
+	err := handler.UpdateDriverLocation(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Contains(t, rec.Body.String(), "internal_error")
+	mockService.AssertExpectations(t)
+}
