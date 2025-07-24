@@ -48,7 +48,7 @@ func TestHaversineDistance_AntipodalPoints(t *testing.T) {
 	// Antipodal points: max possible distance on Earth (~20015 km)
 	// https://en.m.wikipedia.org/wiki/Antipodal_point
 	lat1, lon1 := 0.0, 0.0
-	lat2, lon2 := -0.0, 180.0
+	lat2, lon2 := 0.0, 180.0
 	dist := HaversineDistance(lat1, lon1, lat2, lon2)
 	if math.Abs(dist-20015000) > 100000 {
 		t.Errorf("Antipodal points should be about 20015 km apart, got %v", dist)
