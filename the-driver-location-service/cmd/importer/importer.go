@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	httpPackage "the-driver-location-service/internal/adapter/http"
 	"the-driver-location-service/internal/domain"
 )
@@ -25,6 +26,12 @@ var (
 	apiKey = getenvOrDefault("MATCHING_API_KEY", "changeme")
 )
 
+type ImportResult struct {
+	RequestedCount int
+	CreatedCount   int
+	ErrorCount     int
+}
+
 func getenvOrDefault(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -35,48 +42,64 @@ func getenvOrDefault(key, def string) string {
 func main() {
 	log.Println("Driver location importer started...")
 
-	if err := importDataConcurrent(); err != nil {
+	result, err := importDataConcurrent()
+	if err != nil {
 		log.Fatalf("Import failed: %v", err)
 	}
 
-	log.Println("Driver location import completed successfully.")
+	log.Printf("Import completed. Requested: %d, Created: %d, Errors: %d",
+		result.RequestedCount, result.CreatedCount, result.ErrorCount)
 }
 
 // i implemented worker pool pattern to import data concurrently
 // because i was asked about it in the interview
-func importDataConcurrent() error {
+func importDataConcurrent() (*ImportResult, error) {
 	file, err := os.Open(CSV_FILE_PATH)
 	if err != nil {
-		return fmt.Errorf("failed to open CSV file: %v", err)
+		return nil, fmt.Errorf("failed to open CSV file: %v", err)
 	}
 	defer file.Close()
 
 	reader := csv.NewReader(file)
 
+	// Skip header
 	if _, err := reader.Read(); err != nil {
-		return fmt.Errorf("failed to read CSV header: %v", err)
+		return nil, fmt.Errorf("failed to read CSV header: %v", err)
 	}
 
-	batchCh := make(chan []domain.CreateDriverRequest)
-	errCh := make(chan error, 100)
+	batchCh := make(chan []domain.CreateDriverRequest, NUM_WORKERS*2)
+	resultCh := make(chan ImportResult, NUM_WORKERS*10)
 	var wg sync.WaitGroup
 
+	// Start workers
 	for i := 0; i < NUM_WORKERS; i++ {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
+
 			for batch := range batchCh {
-				if err := processBatchHTTP(batch); err != nil {
-					log.Printf("Worker %d: Error processing batch: %v", workerID, err)
-					errCh <- err
-				}
+				batchResult := processBatchHTTP(batch, workerID)
+				resultCh <- batchResult
 			}
 		}(i)
 	}
 
+	// Result aggregator goroutine
+	var totalRequested, totalCreated, totalErrors int64
+	done := make(chan struct{})
+
+	go func() {
+		for result := range resultCh {
+			atomic.AddInt64(&totalRequested, int64(result.RequestedCount))
+			atomic.AddInt64(&totalCreated, int64(result.CreatedCount))
+			atomic.AddInt64(&totalErrors, int64(result.ErrorCount))
+		}
+		close(done)
+	}()
+
+	// Read CSV and send batches
 	var batch []domain.CreateDriverRequest
-	successCount := 0
-	errorCount := 0
+	recordCount := 0
 
 	for {
 		record, err := reader.Read()
@@ -84,15 +107,14 @@ func importDataConcurrent() error {
 			if err.Error() == "EOF" {
 				break
 			}
-			log.Printf("Error reading CSV record: %v", err)
-			errorCount++
+			log.Printf("Error reading CSV record at line %d: %v", recordCount+2, err) // +2 for header and 1-indexed
 			continue
 		}
 
+		recordCount++
 		driverReq, err := parseDriverLocation(record)
 		if err != nil {
-			log.Printf("Error parsing driver location from record %v: %v", record, err)
-			errorCount++
+			log.Printf("Error parsing driver location from record %d %v: %v", recordCount, record, err)
 			continue
 		}
 
@@ -100,40 +122,51 @@ func importDataConcurrent() error {
 
 		if len(batch) >= BATCH_SIZE {
 			batchCh <- batch
-			successCount += len(batch)
 			batch = nil
 		}
 	}
 
+	// Send remaining batch
 	if len(batch) > 0 {
 		batchCh <- batch
-		successCount += len(batch)
 	}
 
+	// Close channels and wait
 	close(batchCh)
 	wg.Wait()
-	close(errCh)
+	close(resultCh)
+	<-done
 
-	for err := range errCh {
-		if err != nil {
-			errorCount++
-		}
+	result := &ImportResult{
+		RequestedCount: int(totalRequested),
+		CreatedCount:   int(totalCreated),
+		ErrorCount:     int(totalErrors),
 	}
 
-	log.Printf("Import completed. Success: %d, Errors: %d", successCount, errorCount)
-	return nil
+	log.Printf("CSV processing completed. Total records read: %d", recordCount)
+	return result, nil
 }
 
-func processBatchHTTP(batch []domain.CreateDriverRequest) error {
+func processBatchHTTP(batch []domain.CreateDriverRequest, workerID int) ImportResult {
+	result := ImportResult{
+		RequestedCount: len(batch),
+		CreatedCount:   0,
+		ErrorCount:     0,
+	}
+
 	batchReq := domain.BatchCreateRequest{Drivers: batch}
 	body, err := json.Marshal(batchReq)
 	if err != nil {
-		return fmt.Errorf("json marshal error: %w", err)
+		log.Printf("Worker %d: JSON marshal error: %v", workerID, err)
+		result.ErrorCount = len(batch)
+		return result
 	}
 
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(body))
 	if err != nil {
-		return fmt.Errorf("http request create error: %w", err)
+		log.Printf("Worker %d: HTTP request create error: %v", workerID, err)
+		result.ErrorCount = len(batch)
+		return result
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if apiKey != "" {
@@ -142,7 +175,9 @@ func processBatchHTTP(batch []domain.CreateDriverRequest) error {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("http request error: %w", err)
+		log.Printf("Worker %d: HTTP request error: %v", workerID, err)
+		result.ErrorCount = len(batch)
+		return result
 	}
 	defer resp.Body.Close()
 
@@ -152,20 +187,28 @@ func processBatchHTTP(batch []domain.CreateDriverRequest) error {
 	if resp.StatusCode != http.StatusCreated {
 		var apiResp httpPackage.APIResponse
 		if err := json.Unmarshal(responseBody.Bytes(), &apiResp); err == nil {
-			return fmt.Errorf("API error (status %d): %s - %s", resp.StatusCode, apiResp.Error, apiResp.Message)
+			log.Printf("Worker %d: API error (status %d): %s - %s", workerID, resp.StatusCode, apiResp.Error, apiResp.Message)
+		} else {
+			log.Printf("Worker %d: API error (status %d): %s", workerID, resp.StatusCode, responseBody.String())
 		}
-		return fmt.Errorf("API error (status %d): %s", resp.StatusCode, responseBody.String())
+		result.ErrorCount = len(batch)
+		return result
 	}
 
 	var apiResp httpPackage.APIResponse
 	if err := json.Unmarshal(responseBody.Bytes(), &apiResp); err != nil {
-		return fmt.Errorf("failed to parse API response: %w", err)
+		log.Printf("Worker %d: Failed to parse API response: %v", workerID, err)
+		result.ErrorCount = len(batch)
+		return result
 	}
 
 	if !apiResp.Success {
-		return fmt.Errorf("API operation failed: %s - %s", apiResp.Error, apiResp.Message)
+		log.Printf("Worker %d: API operation failed: %s - %s", workerID, apiResp.Error, apiResp.Message)
+		result.ErrorCount = len(batch)
+		return result
 	}
 
+	// Extract actual created count from API response
 	var createdCount int
 	if data, ok := apiResp.Data.(map[string]interface{}); ok {
 		if count, ok := data["count"].(float64); ok {
@@ -173,8 +216,19 @@ func processBatchHTTP(batch []domain.CreateDriverRequest) error {
 		}
 	}
 
-	log.Printf("Batch import success, requested: %d, created: %d", len(batch), createdCount)
-	return nil
+	result.CreatedCount = createdCount
+
+	// Log any discrepancy
+	if createdCount != len(batch) {
+		log.Printf("Worker %d: Batch discrepancy - requested: %d, created: %d",
+			workerID, len(batch), createdCount)
+		result.ErrorCount = len(batch) - createdCount
+	}
+
+	log.Printf("Worker %d: Batch completed - requested: %d, created: %d",
+		workerID, len(batch), createdCount)
+
+	return result
 }
 
 func parseDriverLocation(record []string) (domain.CreateDriverRequest, error) {

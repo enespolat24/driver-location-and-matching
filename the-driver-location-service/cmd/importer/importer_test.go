@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 	"the-driver-location-service/internal/domain"
 )
@@ -62,14 +61,14 @@ func TestParseDriverLocation_InvalidLongitude(t *testing.T) {
 }
 
 // TestProcessBatchHTTP_Success tests processBatchHTTP with a successful API response.
-// Expected: Should return nil error when API returns 201 Created with success response.
+// Expected: Should return ImportResult with correct created count when API returns 201 Created with success response.
 func TestProcessBatchHTTP_Success(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("Expected POST method, got %s", r.Method)
 		}
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(`{"success": true, "data": {"count": 1, "drivers": [{"id": "test-driver"}]}, "message": "Drivers created successfully"}`))
+		w.Write([]byte(`{"success": true, "data": {"count": 2, "drivers": [{"id": "test-driver-1"}, {"id": "test-driver-2"}]}, "message": "Drivers created successfully"}`))
 	}))
 	defer ts.Close()
 
@@ -77,15 +76,57 @@ func TestProcessBatchHTTP_Success(t *testing.T) {
 	apiURL = ts.URL
 	defer func() { apiURL = oldURL }()
 
-	batch := []domain.CreateDriverRequest{{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}}}
-	err := processBatchHTTP(batch)
-	if err != nil {
-		t.Errorf("Expected nil error, got %v", err)
+	batch := []domain.CreateDriverRequest{
+		{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}},
+		{Location: domain.Point{Type: "Point", Coordinates: []float64{3, 4}}},
+	}
+
+	result := processBatchHTTP(batch, 1)
+
+	if result.RequestedCount != 2 {
+		t.Errorf("Expected RequestedCount=2, got %d", result.RequestedCount)
+	}
+	if result.CreatedCount != 2 {
+		t.Errorf("Expected CreatedCount=2, got %d", result.CreatedCount)
+	}
+	if result.ErrorCount != 0 {
+		t.Errorf("Expected ErrorCount=0, got %d", result.ErrorCount)
+	}
+}
+
+// TestProcessBatchHTTP_PartialSuccess tests processBatchHTTP when API creates fewer drivers than requested.
+// Expected: Should return ImportResult with correct counts and error count for discrepancy.
+func TestProcessBatchHTTP_PartialSuccess(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`{"success": true, "data": {"count": 1, "drivers": [{"id": "test-driver-1"}]}, "message": "Some drivers created successfully"}`))
+	}))
+	defer ts.Close()
+
+	oldURL := apiURL
+	apiURL = ts.URL
+	defer func() { apiURL = oldURL }()
+
+	batch := []domain.CreateDriverRequest{
+		{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}},
+		{Location: domain.Point{Type: "Point", Coordinates: []float64{3, 4}}},
+	}
+
+	result := processBatchHTTP(batch, 1)
+
+	if result.RequestedCount != 2 {
+		t.Errorf("Expected RequestedCount=2, got %d", result.RequestedCount)
+	}
+	if result.CreatedCount != 1 {
+		t.Errorf("Expected CreatedCount=1, got %d", result.CreatedCount)
+	}
+	if result.ErrorCount != 1 {
+		t.Errorf("Expected ErrorCount=1, got %d", result.ErrorCount)
 	}
 }
 
 // TestProcessBatchHTTP_APIError tests processBatchHTTP with a non-201 response.
-// Expected: Should return error when API returns non-201 status and error should contain response details.
+// Expected: Should return ImportResult with all requests marked as errors when API returns non-201 status.
 func TestProcessBatchHTTP_APIError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -97,31 +138,49 @@ func TestProcessBatchHTTP_APIError(t *testing.T) {
 	apiURL = ts.URL
 	defer func() { apiURL = oldURL }()
 
-	batch := []domain.CreateDriverRequest{{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}}}
-	err := processBatchHTTP(batch)
-	if err == nil {
-		t.Error("Expected error for non-201 response, got nil")
-	} else if !strings.Contains(err.Error(), "validation_error") {
-		t.Errorf("Expected error to contain 'validation_error', got %v", err)
+	batch := []domain.CreateDriverRequest{
+		{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}},
+	}
+
+	result := processBatchHTTP(batch, 1)
+
+	if result.RequestedCount != 1 {
+		t.Errorf("Expected RequestedCount=1, got %d", result.RequestedCount)
+	}
+	if result.CreatedCount != 0 {
+		t.Errorf("Expected CreatedCount=0, got %d", result.CreatedCount)
+	}
+	if result.ErrorCount != 1 {
+		t.Errorf("Expected ErrorCount=1, got %d", result.ErrorCount)
 	}
 }
 
 // TestProcessBatchHTTP_HTTPError tests processBatchHTTP with an unreachable server.
-// Expected: Should return error when server is unreachable.
+// Expected: Should return ImportResult with all requests marked as errors when server is unreachable.
 func TestProcessBatchHTTP_HTTPError(t *testing.T) {
 	oldURL := apiURL
 	apiURL = "http://127.0.0.1:0" // invalid port
 	defer func() { apiURL = oldURL }()
 
-	batch := []domain.CreateDriverRequest{{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}}}
-	err := processBatchHTTP(batch)
-	if err == nil {
-		t.Error("Expected error for unreachable server, got nil")
+	batch := []domain.CreateDriverRequest{
+		{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}},
+	}
+
+	result := processBatchHTTP(batch, 1)
+
+	if result.RequestedCount != 1 {
+		t.Errorf("Expected RequestedCount=1, got %d", result.RequestedCount)
+	}
+	if result.CreatedCount != 0 {
+		t.Errorf("Expected CreatedCount=0, got %d", result.CreatedCount)
+	}
+	if result.ErrorCount != 1 {
+		t.Errorf("Expected ErrorCount=1, got %d", result.ErrorCount)
 	}
 }
 
 // TestProcessBatchHTTP_APIServiceError tests processBatchHTTP when API returns success=false
-// Expected: Should return error when API response indicates operation failure
+// Expected: Should return ImportResult with all requests marked as errors when API response indicates operation failure
 func TestProcessBatchHTTP_APIServiceError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
@@ -133,17 +192,25 @@ func TestProcessBatchHTTP_APIServiceError(t *testing.T) {
 	apiURL = ts.URL
 	defer func() { apiURL = oldURL }()
 
-	batch := []domain.CreateDriverRequest{{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}}}
-	err := processBatchHTTP(batch)
-	if err == nil {
-		t.Error("Expected error for success=false response, got nil")
-	} else if !strings.Contains(err.Error(), "service_error") {
-		t.Errorf("Expected error to contain 'service_error', got %v", err)
+	batch := []domain.CreateDriverRequest{
+		{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}},
+	}
+
+	result := processBatchHTTP(batch, 1)
+
+	if result.RequestedCount != 1 {
+		t.Errorf("Expected RequestedCount=1, got %d", result.RequestedCount)
+	}
+	if result.CreatedCount != 0 {
+		t.Errorf("Expected CreatedCount=0, got %d", result.CreatedCount)
+	}
+	if result.ErrorCount != 1 {
+		t.Errorf("Expected ErrorCount=1, got %d", result.ErrorCount)
 	}
 }
 
 // TestProcessBatchHTTP_InvalidResponseJSON tests processBatchHTTP with invalid JSON response
-// Expected: Should return error when API returns invalid JSON
+// Expected: Should return ImportResult with all requests marked as errors when API returns invalid JSON
 func TestProcessBatchHTTP_InvalidResponseJSON(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
@@ -155,10 +222,50 @@ func TestProcessBatchHTTP_InvalidResponseJSON(t *testing.T) {
 	apiURL = ts.URL
 	defer func() { apiURL = oldURL }()
 
-	batch := []domain.CreateDriverRequest{{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}}}
-	err := processBatchHTTP(batch)
-	if err == nil {
-		t.Error("Expected error for invalid JSON response, got nil")
+	batch := []domain.CreateDriverRequest{
+		{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}},
+	}
+
+	result := processBatchHTTP(batch, 1)
+
+	if result.RequestedCount != 1 {
+		t.Errorf("Expected RequestedCount=1, got %d", result.RequestedCount)
+	}
+	if result.CreatedCount != 0 {
+		t.Errorf("Expected CreatedCount=0, got %d", result.CreatedCount)
+	}
+	if result.ErrorCount != 1 {
+		t.Errorf("Expected ErrorCount=1, got %d", result.ErrorCount)
+	}
+}
+
+// TestProcessBatchHTTP_MissingCountInResponse tests processBatchHTTP when API response doesn't include count
+// Expected: Should handle missing count gracefully and assume 0 created
+func TestProcessBatchHTTP_MissingCountInResponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`{"success": true, "data": {"drivers": [{"id": "test-driver"}]}, "message": "Drivers created successfully"}`))
+	}))
+	defer ts.Close()
+
+	oldURL := apiURL
+	apiURL = ts.URL
+	defer func() { apiURL = oldURL }()
+
+	batch := []domain.CreateDriverRequest{
+		{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}},
+	}
+
+	result := processBatchHTTP(batch, 1)
+
+	if result.RequestedCount != 1 {
+		t.Errorf("Expected RequestedCount=1, got %d", result.RequestedCount)
+	}
+	if result.CreatedCount != 0 {
+		t.Errorf("Expected CreatedCount=0 (missing count), got %d", result.CreatedCount)
+	}
+	if result.ErrorCount != 1 {
+		t.Errorf("Expected ErrorCount=1 (missing count treated as error), got %d", result.ErrorCount)
 	}
 }
 
