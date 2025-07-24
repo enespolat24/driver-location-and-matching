@@ -349,3 +349,44 @@ func TestAPIKeyAuthMiddleware_ComplexPaths(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, rec.Code, "Path %s should require authentication", path)
 	}
 }
+
+// TestAPIKeyAuthMiddleware_EmptyConfigKey tests critical security vulnerability when config API key is empty
+// Expected: Should return 401 Unauthorized with server misconfiguration message when config API key is empty
+func TestAPIKeyAuthMiddleware_EmptyConfigKey(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/drivers", nil)
+	req.Header.Set("X-API-Key", "any-key")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	mw := APIKeyAuthMiddleware(AuthConfig{MatchingAPIKey: ""}) // Empty config!
+	h := mw(func(c echo.Context) error {
+		return c.String(http.StatusOK, "ok")
+	})
+
+	err := h(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Contains(t, rec.Body.String(), "Server misconfiguration")
+	assert.Contains(t, rec.Body.String(), "API key is not set")
+}
+
+// TestAPIKeyAuthMiddleware_WhitespaceConfigKey tests security vulnerability when config API key is only whitespace
+// Expected: Should return 401 Unauthorized when config API key contains only whitespace
+func TestAPIKeyAuthMiddleware_WhitespaceConfigKey(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/drivers", nil)
+	req.Header.Set("X-API-Key", "any-key")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	mw := APIKeyAuthMiddleware(AuthConfig{MatchingAPIKey: "   "}) // Whitespace config!
+	h := mw(func(c echo.Context) error {
+		return c.String(http.StatusOK, "ok")
+	})
+
+	err := h(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Contains(t, rec.Body.String(), "Server misconfiguration")
+}

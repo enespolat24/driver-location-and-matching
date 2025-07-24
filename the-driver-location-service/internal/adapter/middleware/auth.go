@@ -24,7 +24,15 @@ func APIKeyAuthMiddleware(config AuthConfig) echo.MiddlewareFunc {
 				})
 			}
 
-			if strings.TrimSpace(apiKey) != strings.TrimSpace(config.MatchingAPIKey) {
+			expectedKey := strings.TrimSpace(config.MatchingAPIKey)
+			if expectedKey == "" {
+				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+					"error":   "unauthorized",
+					"message": "Server misconfiguration: API key is not set",
+				})
+			}
+
+			if strings.TrimSpace(apiKey) != expectedKey {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 					"error":   "unauthorized",
 					"message": "Invalid API key",
