@@ -1,5 +1,8 @@
 # Driver Location and Matching Service
 
+This case study focuses on building a system that matches a rider with the nearest available driver. It consists of two services: the Driver Location API, which manages driver location data stored in MongoDB, and the Matching API, which uses this data to find the closest driver based on a given point. The goal is to provide accurate and efficient driver-rider matching using geospatial queries.
+
+
 This project contains two microservices:
 - **Driver Location Service**: Manages driver locations
 - **Matching Service**: Handles driver-rider matching logic
@@ -50,8 +53,8 @@ docker compose logs -f
 ### Default Service Endpoints
 do not forget to double check these from .env file
 
-- **Driver Location Service**: http://localhost:8080
-- **Matching Service**: http://localhost:3000
+- **Driver Location Service**: http://localhost:8087
+- **Matching Service**: http://localhost:8088
 - **MongoDB**: localhost:27017
 - **Redis**: localhost:6379
 
