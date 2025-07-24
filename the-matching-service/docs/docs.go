@@ -137,29 +137,15 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "location",
-                "name",
-                "radius",
-                "surname"
+                "radius"
             ],
             "properties": {
                 "location": {
                     "$ref": "#/definitions/domain.Location"
                 },
-                "name": {
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 2,
-                    "example": "John"
-                },
                 "radius": {
                     "type": "number",
                     "example": 500
-                },
-                "surname": {
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 2,
-                    "example": "Doe"
                 }
             }
         },
