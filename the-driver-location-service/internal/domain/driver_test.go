@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+// TestNewPointAndAccessors tests the NewPoint constructor and its accessors.
+// Expected: Should return correct longitude and latitude values.
 func TestNewPointAndAccessors(t *testing.T) {
 	p := NewPoint(29.0, 41.0)
 	if p.Longitude() != 29.0 {
@@ -15,6 +17,8 @@ func TestNewPointAndAccessors(t *testing.T) {
 	}
 }
 
+// TestHaversineDistance_IstanbulAnkara tests the HaversineDistance between Istanbul and Ankara.
+// Expected: Should be approximately 351 km (within 15 km tolerance).
 func TestHaversineDistance_IstanbulAnkara(t *testing.T) {
 	// Distance between Istanbul and Ankara is approximately 351 km
 	// i measured it with geojson.io
@@ -26,6 +30,8 @@ func TestHaversineDistance_IstanbulAnkara(t *testing.T) {
 	}
 }
 
+// TestPointDistance_SamePoint tests the distance between the same point.
+// Expected: Should be less than 1 meter.
 func TestPointDistance_SamePoint(t *testing.T) {
 	p1 := NewPoint(29.0, 41.0)
 	p2 := NewPoint(29.0, 41.0)
@@ -35,6 +41,8 @@ func TestPointDistance_SamePoint(t *testing.T) {
 	}
 }
 
+// TestPointDistance_ZeroLongitudeLatitude tests the distance between (0,0) and (0,0).
+// Expected: Should be less than 1 meter.
 func TestPointDistance_ZeroLongitudeLatitude(t *testing.T) {
 	p1 := NewPoint(0, 0)
 	p2 := NewPoint(0, 0)
@@ -44,6 +52,8 @@ func TestPointDistance_ZeroLongitudeLatitude(t *testing.T) {
 	}
 }
 
+// TestHaversineDistance_AntipodalPoints tests the HaversineDistance between antipodal points.
+// Expected: Should be about 20015 km (within 100 km tolerance).
 func TestHaversineDistance_AntipodalPoints(t *testing.T) {
 	// Antipodal points: max possible distance on Earth (~20015 km)
 	// https://en.m.wikipedia.org/wiki/Antipodal_point
@@ -55,6 +65,8 @@ func TestHaversineDistance_AntipodalPoints(t *testing.T) {
 	}
 }
 
+// TestHaversineDistance_SmallDistance tests the HaversineDistance for a small difference in latitude.
+// Expected: Should be about 111 meters (within 2 meters tolerance).
 func TestHaversineDistance_SmallDistance(t *testing.T) {
 	// Two points ~111 meters apart (1 arcsecond latitude difference)
 	lat1, lon1 := 0.0, 0.0
@@ -65,6 +77,8 @@ func TestHaversineDistance_SmallDistance(t *testing.T) {
 	}
 }
 
+// TestNewPoint_NegativeCoordinates tests NewPoint with negative coordinates.
+// Expected: Should return correct negative longitude and latitude values.
 func TestNewPoint_NegativeCoordinates(t *testing.T) {
 	p := NewPoint(-74.0, -40.0)
 	if p.Longitude() != -74.0 {

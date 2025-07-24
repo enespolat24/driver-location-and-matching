@@ -56,6 +56,8 @@ func setupMongoTestRepo(t *testing.T) (*MongoDriverRepository, func()) {
 	return repo, cleanup
 }
 
+// TestMongoDriverRepository_CreateAndGetByID tests creating and retrieving a driver by ID.
+// Expected: Should create and retrieve the driver with correct location.
 func TestMongoDriverRepository_CreateAndGetByID(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -74,6 +76,8 @@ func TestMongoDriverRepository_CreateAndGetByID(t *testing.T) {
 	assert.Equal(t, drv.Location.Latitude(), got.Location.Latitude())
 }
 
+// TestMongoDriverRepository_Update tests updating a driver's location.
+// Expected: Should update the driver's location correctly.
 func TestMongoDriverRepository_Update(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -90,6 +94,8 @@ func TestMongoDriverRepository_Update(t *testing.T) {
 	assert.Equal(t, 20.0, got.Location.Latitude())
 }
 
+// TestMongoDriverRepository_Delete tests deleting a driver by ID.
+// Expected: Should delete the driver and not find it afterwards.
 func TestMongoDriverRepository_Delete(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -101,6 +107,8 @@ func TestMongoDriverRepository_Delete(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestMongoDriverRepository_BatchCreate tests batch creation of drivers.
+// Expected: Should create all drivers and retrieve them by ID.
 func TestMongoDriverRepository_BatchCreate(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -117,6 +125,8 @@ func TestMongoDriverRepository_BatchCreate(t *testing.T) {
 	}
 }
 
+// TestMongoDriverRepository_SearchNearby tests searching for nearby drivers.
+// Expected: Should find drivers within the given radius.
 func TestMongoDriverRepository_SearchNearby(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -141,8 +151,8 @@ func TestMongoDriverRepository_SearchNearby(t *testing.T) {
 	assert.NotContains(t, ids, "s3")
 }
 
-// TestMongoDriverRepository_Delete_NotFound tests deletion of non-existent driver
-// Expected: Should return error when trying to delete driver that doesn't exist
+// TestMongoDriverRepository_Delete_NotFound tests deletion of non-existent driver.
+// Expected: Should return error when trying to delete driver that doesn't exist.
 func TestMongoDriverRepository_Delete_NotFound(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -152,8 +162,8 @@ func TestMongoDriverRepository_Delete_NotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "driver not found")
 }
 
-// TestMongoDriverRepository_IsEmpty tests IsEmpty functionality
-// Expected: Should return true when collection is empty, false when it has documents
+// TestMongoDriverRepository_IsEmpty tests IsEmpty functionality.
+// Expected: Should return true when collection is empty, false when it has documents.
 func TestMongoDriverRepository_IsEmpty(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -176,8 +186,8 @@ func TestMongoDriverRepository_IsEmpty(t *testing.T) {
 	assert.True(t, isEmpty)
 }
 
-// TestMongoDriverRepository_GetByID_NotFound tests GetByID with non-existent ID
-// Expected: Should return error when driver is not found
+// TestMongoDriverRepository_GetByID_NotFound tests GetByID with non-existent ID.
+// Expected: Should return error when driver is not found.
 func TestMongoDriverRepository_GetByID_NotFound(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -187,8 +197,8 @@ func TestMongoDriverRepository_GetByID_NotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "driver not found")
 }
 
-// TestMongoDriverRepository_Update_NotFound tests updating non-existent driver
-// Expected: Should return error when trying to update driver that doesn't exist
+// TestMongoDriverRepository_Update_NotFound tests updating non-existent driver.
+// Expected: Should return error when trying to update driver that doesn't exist.
 func TestMongoDriverRepository_Update_NotFound(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -203,8 +213,8 @@ func TestMongoDriverRepository_Update_NotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "driver not found")
 }
 
-// TestMongoDriverRepository_Create_EmptyID tests creation with empty ID (auto-generation)
-// Expected: Should auto-generate ID when not provided
+// TestMongoDriverRepository_Create_EmptyID tests creation with empty ID (auto-generation).
+// Expected: Should auto-generate ID when not provided.
 func TestMongoDriverRepository_Create_EmptyID(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -223,8 +233,8 @@ func TestMongoDriverRepository_Create_EmptyID(t *testing.T) {
 	assert.Equal(t, drv.ID, retrieved.ID)
 }
 
-// TestMongoDriverRepository_BatchCreate_EmptyArray tests batch creation with empty array
-// Expected: Should handle empty array gracefully without error
+// TestMongoDriverRepository_BatchCreate_EmptyArray tests batch creation with empty array.
+// Expected: Should handle empty array gracefully without error.
 func TestMongoDriverRepository_BatchCreate_EmptyArray(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -239,8 +249,8 @@ func TestMongoDriverRepository_BatchCreate_EmptyArray(t *testing.T) {
 	assert.True(t, isEmpty)
 }
 
-// TestMongoDriverRepository_BatchCreate_MixedIDs tests batch creation with mixed empty/non-empty IDs
-// Expected: Should handle mix of drivers with and without IDs
+// TestMongoDriverRepository_BatchCreate_MixedIDs tests batch creation with mixed empty/non-empty IDs.
+// Expected: Should handle mix of drivers with and without IDs.
 func TestMongoDriverRepository_BatchCreate_MixedIDs(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -265,8 +275,8 @@ func TestMongoDriverRepository_BatchCreate_MixedIDs(t *testing.T) {
 	}
 }
 
-// TestMongoDriverRepository_SearchNearby_EmptyResult tests search that returns no results
-// Expected: Should return empty slice when no drivers are in range
+// TestMongoDriverRepository_SearchNearby_EmptyResult tests search that returns no results.
+// Expected: Should return empty slice when no drivers are in range.
 func TestMongoDriverRepository_SearchNearby_EmptyResult(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()
@@ -280,8 +290,8 @@ func TestMongoDriverRepository_SearchNearby_EmptyResult(t *testing.T) {
 	assert.Empty(t, found)
 }
 
-// TestMongoDriverRepository_SearchNearby_ZeroLimit tests search with zero limit
-// Expected: Should return limited results based on MongoDB's behavior with zero limit
+// TestMongoDriverRepository_SearchNearby_ZeroLimit tests search with zero limit.
+// Expected: Should return limited results based on MongoDB's behavior with zero limit.
 func TestMongoDriverRepository_SearchNearby_ZeroLimit(t *testing.T) {
 	repo, cleanup := setupMongoTestRepo(t)
 	defer cleanup()

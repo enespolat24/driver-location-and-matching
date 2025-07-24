@@ -45,7 +45,8 @@ func (m *MockDriverService) DeleteDriver(id string) error {
 	return args.Error(0)
 }
 
-// Tekli driver creation
+// TestCreateDrivers_SingleDriver_Success tests single driver creation.
+// Expected: Should create a single driver and return correct response.
 func TestCreateDrivers_SingleDriver_Success(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
@@ -63,11 +64,12 @@ func TestCreateDrivers_SingleDriver_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, rec.Code)
 	assert.Contains(t, rec.Body.String(), "d1")
-	assert.Contains(t, rec.Body.String(), "driver") // Single driver response
+	assert.Contains(t, rec.Body.String(), "driver")
 	mockService.AssertExpectations(t)
 }
 
-// Çoklu driver creation
+// TestCreateDrivers_Batch_Success tests batch driver creation.
+// Expected: Should create multiple drivers and return correct response.
 func TestCreateDrivers_Batch_Success(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
@@ -87,11 +89,12 @@ func TestCreateDrivers_Batch_Success(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, rec.Code)
 	assert.Contains(t, rec.Body.String(), "d1")
 	assert.Contains(t, rec.Body.String(), "d2")
-	assert.Contains(t, rec.Body.String(), "drivers") // Batch response
+	assert.Contains(t, rec.Body.String(), "drivers")
 	mockService.AssertExpectations(t)
 }
 
-// Invalid JSON
+// TestCreateDrivers_InvalidJSON tests invalid JSON in driver creation.
+// Expected: Should return 400 Bad Request for invalid JSON.
 func TestCreateDrivers_InvalidJSON(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
@@ -107,7 +110,8 @@ func TestCreateDrivers_InvalidJSON(t *testing.T) {
 	assert.Contains(t, rec.Body.String(), "Invalid request body")
 }
 
-// Service error
+// TestCreateDrivers_ServiceError tests service error in driver creation.
+// Expected: Should return 500 Internal Server Error on service failure.
 func TestCreateDrivers_ServiceError(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
@@ -127,7 +131,8 @@ func TestCreateDrivers_ServiceError(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-// Validation error (empty array)
+// TestCreateDrivers_ValidationError_EmptyArray tests empty array validation in driver creation.
+// Expected: Should return 400 Bad Request for empty array.
 func TestCreateDrivers_ValidationError_EmptyArray(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
@@ -144,12 +149,13 @@ func TestCreateDrivers_ValidationError_EmptyArray(t *testing.T) {
 	assert.Contains(t, rec.Body.String(), "At least one driver is required")
 }
 
-// Validation error (invalid driver)
+// TestCreateDrivers_ValidationError_InvalidDriver tests invalid driver data in creation.
+// Expected: Should return 500 Internal Server Error for invalid driver data.
 func TestCreateDrivers_ValidationError_InvalidDriver(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
 	e := echo.New()
-	body := `[{"id":"","location":{"type":"InvalidType","coordinates":[181,91]}}]` // Invalid data
+	body := `[{"id":"","location":{"type":"InvalidType","coordinates":[181,91]}}]`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
@@ -165,24 +171,25 @@ func TestCreateDrivers_ValidationError_InvalidDriver(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-// Missing Content-Type
+// TestCreateDrivers_MissingContentType tests missing Content-Type header in driver creation.
+// Expected: Should return 400 Bad Request for missing Content-Type.
 func TestCreateDrivers_MissingContentType(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
 	e := echo.New()
 	body := `[{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}]`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
-	// Content-Type intentionally missing
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	// Content-Type eksik olduğunda Echo bind işlemi başarısız olur, 400 döner
 	err := handler.CreateDrivers(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 	assert.Contains(t, rec.Body.String(), "Invalid request body")
 }
 
+// TestSearchNearbyDrivers_Success tests successful nearby driver search.
+// Expected: Should return drivers within the given radius.
 func TestSearchNearbyDrivers_Success(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
@@ -206,6 +213,8 @@ func TestSearchNearbyDrivers_Success(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
+// TestGetDriver_Success tests successful driver retrieval by ID.
+// Expected: Should return the driver with correct ID.
 func TestGetDriver_Success(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
@@ -225,6 +234,8 @@ func TestGetDriver_Success(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
+// TestGetDriver_NotFound tests retrieval of non-existent driver.
+// Expected: Should return 404 Not Found for unknown driver.
 func TestGetDriver_NotFound(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
@@ -243,6 +254,8 @@ func TestGetDriver_NotFound(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
+// TestUpdateDriver_Success tests successful driver update.
+// Expected: Should update the driver and return correct response.
 func TestUpdateDriver_Success(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
@@ -265,6 +278,8 @@ func TestUpdateDriver_Success(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
+// TestUpdateDriverLocation_Success tests successful driver location update.
+// Expected: Should update the driver location and return correct response.
 func TestUpdateDriverLocation_Success(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
@@ -285,6 +300,8 @@ func TestUpdateDriverLocation_Success(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
+// TestDeleteDriver_Success tests successful driver deletion.
+// Expected: Should delete the driver and return correct response.
 func TestDeleteDriver_Success(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
