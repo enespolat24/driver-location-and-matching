@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+	"math"
 
 	"the-matching-service/internal/domain"
 	"the-matching-service/internal/ports/secondary"
@@ -32,6 +33,6 @@ func (s *MatchingService) MatchRiderToDriver(ctx context.Context, rider domain.R
 	return &domain.MatchResult{
 		RiderID:  rider.ID,
 		DriverID: nearest.Driver.ID,
-		Distance: nearest.Distance,
+		Distance: math.Round(nearest.Distance*100) / 100,
 	}, nil
 }
