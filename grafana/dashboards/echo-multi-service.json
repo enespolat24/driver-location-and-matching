@@ -26,12 +26,12 @@
         },
         {
             "type": "stat",
-            "title": "Total HTTP Requests (driver-location-service, last 5m)",
+            "title": "Total HTTP Requests (driver-location-service)",
             "datasource": "Prometheus",
             "targets": [
                 {
-                    "expr": "sum(increase(driver_location_service_requests_total[5m]))",
-                    "legendFormat": "driver-location-service (5m)",
+                    "expr": "sum(increase(driver_location_service_requests_total[$__range]))",
+                    "legendFormat": "driver-location-service",
                     "interval": ""
                 }
             ],
@@ -50,12 +50,12 @@
         },
         {
             "type": "stat",
-            "title": "Total HTTP Requests (matching-service, last 5m)",
+            "title": "Total HTTP Requests (matching-service)",
             "datasource": "Prometheus",
             "targets": [
                 {
-                    "expr": "sum(increase(matching_service_requests_total[5m]))",
-                    "legendFormat": "matching-service (5m)",
+                    "expr": "sum(increase(matching_service_requests_total[$__range]))",
+                    "legendFormat": "matching-service",
                     "interval": ""
                 }
             ],
@@ -126,7 +126,7 @@
             "datasource": "Prometheus",
             "targets": [
                 {
-                    "expr": "sum(rate(driver_location_service_requests_total[1m]))",
+                    "expr": "sum(rate(driver_location_service_requests_total[$__rate_interval]))",
                     "legendFormat": "driver-location-service RPS",
                     "interval": ""
                 }
@@ -150,7 +150,7 @@
             "datasource": "Prometheus",
             "targets": [
                 {
-                    "expr": "sum(rate(matching_service_requests_total[1m]))",
+                    "expr": "sum(rate(matching_service_requests_total[$__rate_interval]))",
                     "legendFormat": "matching-service RPS",
                     "interval": ""
                 }
@@ -174,7 +174,7 @@
             "datasource": "Prometheus",
             "targets": [
                 {
-                    "expr": "sum(increase(driver_location_service_requests_total{code=~\"5..\"}[5m])) / sum(increase(driver_location_service_requests_total[5m]))",
+                    "expr": "sum(increase(driver_location_service_requests_total{code=~\"5..\"}[$__range])) / sum(increase(driver_location_service_requests_total[$__range]))",
                     "legendFormat": "error rate",
                     "interval": ""
                 }
@@ -198,7 +198,7 @@
             "datasource": "Prometheus",
             "targets": [
                 {
-                    "expr": "sum(increase(matching_service_requests_total{code=~\"5..\"}[5m])) / sum(increase(matching_service_requests_total[5m]))",
+                    "expr": "sum(increase(matching_service_requests_total{code=~\"5..\"}[$__range])) / sum(increase(matching_service_requests_total[$__range]))",
                     "legendFormat": "error rate",
                     "interval": ""
                 }
@@ -222,12 +222,12 @@
             "datasource": "Prometheus",
             "targets": [
                 {
-                    "expr": "sum(rate(driver_location_service_requests_total[1m]))",
+                    "expr": "sum(rate(driver_location_service_requests_total[$__rate_interval]))",
                     "legendFormat": "driver-location-service",
                     "interval": ""
                 },
                 {
-                    "expr": "sum(rate(matching_service_requests_total[1m]))",
+                    "expr": "sum(rate(matching_service_requests_total[$__rate_interval]))",
                     "legendFormat": "matching-service",
                     "interval": ""
                 }
@@ -251,12 +251,12 @@
             "datasource": "Prometheus",
             "targets": [
                 {
-                    "expr": "histogram_quantile(0.95, sum(rate(driver_location_service_request_duration_seconds_bucket[5m])) by (le, url))",
+                    "expr": "histogram_quantile(0.95, sum(rate(driver_location_service_request_duration_seconds_bucket[$__rate_interval])) by (le, url))",
                     "legendFormat": "p95 driver-location-service",
                     "interval": ""
                 },
                 {
-                    "expr": "histogram_quantile(0.95, sum(rate(matching_service_request_duration_seconds_bucket[5m])) by (le, url))",
+                    "expr": "histogram_quantile(0.95, sum(rate(matching_service_request_duration_seconds_bucket[$__rate_interval])) by (le, url))",
                     "legendFormat": "p95 matching-service",
                     "interval": ""
                 }
@@ -276,16 +276,16 @@
         },
         {
             "type": "table",
-            "title": "HTTP Requests by Endpoint (last 5m)",
+            "title": "HTTP Requests by Endpoint",
             "datasource": "Prometheus",
             "targets": [
                 {
-                    "expr": "sum by (url) (increase(driver_location_service_requests_total[5m]))",
+                    "expr": "sum by (url) (increase(driver_location_service_requests_total[$__range]))",
                     "legendFormat": "driver-location-service {{url}}",
                     "interval": ""
                 },
                 {
-                    "expr": "sum by (url) (increase(matching_service_requests_total[5m]))",
+                    "expr": "sum by (url) (increase(matching_service_requests_total[$__range]))",
                     "legendFormat": "matching-service {{url}}",
                     "interval": ""
                 }
