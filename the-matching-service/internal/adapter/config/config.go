@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -20,6 +21,8 @@ func LoadConfig() *Config {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = ":8087"
+	} else if !strings.HasPrefix(port, ":") {
+		port = ":" + port
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
