@@ -1,0 +1,117 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: driver-location-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password123}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - driver-app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: driver-location-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis123}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - driver-app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  driver-location-service:
+    build:
+      context: ./the-driver-location-service
+      dockerfile: dockerfile
+    container_name: driver-location-service
+    restart: unless-stopped
+    environment:
+      - PORT=${DRIVER_LOCATION_API_PORT}
+      - HOST=${DRIVER_LOCATION_HOST}
+      - ENVIRONMENT=development
+      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password123}@mongodb:27017/${MONGO_DATABASE}?authSource=admin
+      - MONGO_DATABASE=${MONGO_DATABASE}
+      - MONGO_CONNECT_TIMEOUT=${MONGO_CONNECT_TIMEOUT}
+      - MONGO_MAX_POOL_SIZE=${MONGO_MAX_POOL_SIZE}
+      - MONGO_MIN_POOL_SIZE=${MONGO_MIN_POOL_SIZE}
+      - REDIS_ADDRESS=${REDIS_ADDRESS:-redis:6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
+      - REDIS_DB=${REDIS_DB:-0}
+      - REDIS_MAX_RETRIES=${REDIS_MAX_RETRIES:-3}
+      - REDIS_POOL_SIZE=${REDIS_POOL_SIZE:-10}
+      - REDIS_TIMEOUT=${REDIS_TIMEOUT:-5s}
+      - REDIS_ENABLED=${REDIS_ENABLED:-true}
+      - MATCHING_API_KEY=${MATCHING_API_KEY}
+      - READ_TIMEOUT=${READ_TIMEOUT}
+      - WRITE_TIMEOUT=${WRITE_TIMEOUT}
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT}
+    ports:
+      - "${DRIVER_LOCATION_API_PORT}:${DRIVER_LOCATION_API_PORT}"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - driver-app-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--method=GET", "http://localhost:${DRIVER_LOCATION_API_PORT}/health", "-O", "-"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  matching-service:
+    build:
+      context: ./the-matching-service
+      dockerfile: Dockerfile
+    container_name: matching-service
+    restart: unless-stopped
+    environment:
+      - PORT=${MATCHING_API_PORT}
+      - DRIVER_LOCATION_BASE_URL=http://driver-location-service:${DRIVER_LOCATION_API_PORT}
+      - DRIVER_LOCATION_API_KEY=${DRIVER_LOCATION_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "${MATCHING_API_PORT}:${MATCHING_API_PORT}"
+    depends_on:
+      driver-location-service:
+        condition: service_healthy
+    networks:
+      - driver-app-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--method=GET", "http://localhost:${MATCHING_API_PORT}/health", "-O", "-"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  driver-app-network:
+    driver: bridge
