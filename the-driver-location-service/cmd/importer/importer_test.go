@@ -1,7 +1,10 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -53,5 +56,64 @@ func TestParseDriverLocation_InvalidLongitude(t *testing.T) {
 	_, err := parseDriverLocation(record)
 	if err == nil {
 		t.Error("Expected error: should return error when longitude is not a float, but got nil")
+	}
+}
+
+// TestProcessBatchHTTP_Success tests processBatchHTTP with a successful API response.
+// Expected: Should return nil error when API returns 201 Created.
+func TestProcessBatchHTTP_Success(t *testing.T) {
+	// Start a test server that always returns 201
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST method, got %s", r.Method)
+		}
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer ts.Close()
+
+	oldURL := apiURL
+	apiURL = ts.URL
+	defer func() { apiURL = oldURL }()
+
+	batch := []CreateDriverRequest{{Location: Point{Type: "Point", Coordinates: []float64{1, 2}}}}
+	err := processBatchHTTP(batch)
+	if err != nil {
+		t.Errorf("Expected nil error, got %v", err)
+	}
+}
+
+// TestProcessBatchHTTP_APIError tests processBatchHTTP with a non-201 response.
+// Expected: Should return error when API returns non-201 status and error should contain response body.
+func TestProcessBatchHTTP_APIError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("bad request"))
+	}))
+	defer ts.Close()
+
+	oldURL := apiURL
+	apiURL = ts.URL
+	defer func() { apiURL = oldURL }()
+
+	batch := []CreateDriverRequest{{Location: Point{Type: "Point", Coordinates: []float64{1, 2}}}}
+	err := processBatchHTTP(batch)
+	if err == nil {
+		t.Error("Expected error for non-201 response, got nil")
+	} else if !strings.Contains(err.Error(), "bad request") {
+		t.Errorf("Expected error to contain 'bad request', got %v", err)
+	}
+}
+
+// TestProcessBatchHTTP_HTTPError tests processBatchHTTP with an unreachable server.
+// Expected: Should return error when server is unreachable.
+func TestProcessBatchHTTP_HTTPError(t *testing.T) {
+	oldURL := apiURL
+	apiURL = "http://127.0.0.1:0" // invalid port
+	defer func() { apiURL = oldURL }()
+
+	batch := []CreateDriverRequest{{Location: Point{Type: "Point", Coordinates: []float64{1, 2}}}}
+	err := processBatchHTTP(batch)
+	if err == nil {
+		t.Error("Expected error for unreachable server, got nil")
 	}
 }
