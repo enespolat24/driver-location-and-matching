@@ -10,6 +10,8 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	httpPackage "the-driver-location-service/internal/adapter/http"
+	"the-driver-location-service/internal/domain"
 )
 
 const (
@@ -55,7 +57,7 @@ func importDataConcurrent() error {
 		return fmt.Errorf("failed to read CSV header: %v", err)
 	}
 
-	batchCh := make(chan []CreateDriverRequest)
+	batchCh := make(chan []domain.CreateDriverRequest)
 	errCh := make(chan error, 100)
 	var wg sync.WaitGroup
 
@@ -72,7 +74,7 @@ func importDataConcurrent() error {
 		}(i)
 	}
 
-	var batch []CreateDriverRequest
+	var batch []domain.CreateDriverRequest
 	successCount := 0
 	errorCount := 0
 
@@ -122,29 +124,8 @@ func importDataConcurrent() error {
 	return nil
 }
 
-type Point struct {
-	Type        string    `json:"type"`
-	Coordinates []float64 `json:"coordinates"`
-}
-
-type CreateDriverRequest struct {
-	ID       string `json:"id,omitempty"`
-	Location Point  `json:"location"`
-}
-
-type BatchCreateRequest struct {
-	Drivers []CreateDriverRequest `json:"drivers"`
-}
-
-type APIResponse struct {
-	Success bool        `json:"success"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
-	Message string      `json:"message,omitempty"`
-}
-
-func processBatchHTTP(batch []CreateDriverRequest) error {
-	batchReq := BatchCreateRequest{Drivers: batch}
+func processBatchHTTP(batch []domain.CreateDriverRequest) error {
+	batchReq := domain.BatchCreateRequest{Drivers: batch}
 	body, err := json.Marshal(batchReq)
 	if err != nil {
 		return fmt.Errorf("json marshal error: %w", err)
@@ -169,14 +150,14 @@ func processBatchHTTP(batch []CreateDriverRequest) error {
 	responseBody.ReadFrom(resp.Body)
 
 	if resp.StatusCode != http.StatusCreated {
-		var apiResp APIResponse
+		var apiResp httpPackage.APIResponse
 		if err := json.Unmarshal(responseBody.Bytes(), &apiResp); err == nil {
 			return fmt.Errorf("API error (status %d): %s - %s", resp.StatusCode, apiResp.Error, apiResp.Message)
 		}
 		return fmt.Errorf("API error (status %d): %s", resp.StatusCode, responseBody.String())
 	}
 
-	var apiResp APIResponse
+	var apiResp httpPackage.APIResponse
 	if err := json.Unmarshal(responseBody.Bytes(), &apiResp); err != nil {
 		return fmt.Errorf("failed to parse API response: %w", err)
 	}
@@ -196,9 +177,9 @@ func processBatchHTTP(batch []CreateDriverRequest) error {
 	return nil
 }
 
-func parseDriverLocation(record []string) (CreateDriverRequest, error) {
+func parseDriverLocation(record []string) (domain.CreateDriverRequest, error) {
 	if len(record) < 2 {
-		return CreateDriverRequest{}, fmt.Errorf("invalid record format: expected at least 2 fields (latitude,longitude), got %d", len(record))
+		return domain.CreateDriverRequest{}, fmt.Errorf("invalid record format: expected at least 2 fields (latitude,longitude), got %d", len(record))
 	}
 
 	latitudeStr := record[0]
@@ -206,15 +187,15 @@ func parseDriverLocation(record []string) (CreateDriverRequest, error) {
 
 	latitude, err := strconv.ParseFloat(latitudeStr, 64)
 	if err != nil {
-		return CreateDriverRequest{}, fmt.Errorf("invalid latitude '%s': %w", latitudeStr, err)
+		return domain.CreateDriverRequest{}, fmt.Errorf("invalid latitude '%s': %w", latitudeStr, err)
 	}
 	longitude, err := strconv.ParseFloat(longitudeStr, 64)
 	if err != nil {
-		return CreateDriverRequest{}, fmt.Errorf("invalid longitude '%s': %w", longitudeStr, err)
+		return domain.CreateDriverRequest{}, fmt.Errorf("invalid longitude '%s': %w", longitudeStr, err)
 	}
 
-	return CreateDriverRequest{
-		Location: Point{
+	return domain.CreateDriverRequest{
+		Location: domain.Point{
 			Type:        "Point",
 			Coordinates: []float64{longitude, latitude},
 		},

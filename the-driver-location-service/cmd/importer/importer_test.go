@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"the-driver-location-service/internal/domain"
 )
 
 // TestParseDriverLocation_Success tests parsing a valid record.
@@ -18,8 +19,8 @@ func TestParseDriverLocation_Success(t *testing.T) {
 		t.Fatalf("Unexpected error: %v (should not error for valid record)", err)
 	}
 
-	expected := CreateDriverRequest{
-		Location: Point{
+	expected := domain.CreateDriverRequest{
+		Location: domain.Point{
 			Type:        "Point",
 			Coordinates: []float64{29.98765, 41.12345},
 		},
@@ -76,7 +77,7 @@ func TestProcessBatchHTTP_Success(t *testing.T) {
 	apiURL = ts.URL
 	defer func() { apiURL = oldURL }()
 
-	batch := []CreateDriverRequest{{Location: Point{Type: "Point", Coordinates: []float64{1, 2}}}}
+	batch := []domain.CreateDriverRequest{{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}}}
 	err := processBatchHTTP(batch)
 	if err != nil {
 		t.Errorf("Expected nil error, got %v", err)
@@ -96,7 +97,7 @@ func TestProcessBatchHTTP_APIError(t *testing.T) {
 	apiURL = ts.URL
 	defer func() { apiURL = oldURL }()
 
-	batch := []CreateDriverRequest{{Location: Point{Type: "Point", Coordinates: []float64{1, 2}}}}
+	batch := []domain.CreateDriverRequest{{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}}}
 	err := processBatchHTTP(batch)
 	if err == nil {
 		t.Error("Expected error for non-201 response, got nil")
@@ -112,7 +113,7 @@ func TestProcessBatchHTTP_HTTPError(t *testing.T) {
 	apiURL = "http://127.0.0.1:0" // invalid port
 	defer func() { apiURL = oldURL }()
 
-	batch := []CreateDriverRequest{{Location: Point{Type: "Point", Coordinates: []float64{1, 2}}}}
+	batch := []domain.CreateDriverRequest{{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}}}
 	err := processBatchHTTP(batch)
 	if err == nil {
 		t.Error("Expected error for unreachable server, got nil")
@@ -132,7 +133,7 @@ func TestProcessBatchHTTP_APIServiceError(t *testing.T) {
 	apiURL = ts.URL
 	defer func() { apiURL = oldURL }()
 
-	batch := []CreateDriverRequest{{Location: Point{Type: "Point", Coordinates: []float64{1, 2}}}}
+	batch := []domain.CreateDriverRequest{{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}}}
 	err := processBatchHTTP(batch)
 	if err == nil {
 		t.Error("Expected error for success=false response, got nil")
@@ -154,7 +155,7 @@ func TestProcessBatchHTTP_InvalidResponseJSON(t *testing.T) {
 	apiURL = ts.URL
 	defer func() { apiURL = oldURL }()
 
-	batch := []CreateDriverRequest{{Location: Point{Type: "Point", Coordinates: []float64{1, 2}}}}
+	batch := []domain.CreateDriverRequest{{Location: domain.Point{Type: "Point", Coordinates: []float64{1, 2}}}}
 	err := processBatchHTTP(batch)
 	if err == nil {
 		t.Error("Expected error for invalid JSON response, got nil")
