@@ -13,6 +13,8 @@ type AuthConfig struct {
 	RequireAuth    bool   `json:"require_auth"`
 }
 
+// Instead of using API key authentication, I could have alternatively
+// restricted access to the service at the network level.
 func APIKeyAuthMiddleware(config AuthConfig) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
