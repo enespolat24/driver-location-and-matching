@@ -78,8 +78,6 @@ docker compose logs -f matching-service
 docker compose up mongodb redis
 ```
 
-```
-
 ##  API Usage
 
 ### Driver Matching
@@ -113,3 +111,21 @@ The matching service requires JWT authentication. You can use the following toke
   "user_id": "81539ac0-8418-4c9c-a426-3fbbf9e2ee6e"
 }
 ```
+
+---
+
+## Monitoring & Dashboard
+
+### Prometheus & Grafana
+
+- **Prometheus** collects and monitors metrics from all services.
+- **Grafana** automatically loads a ready-made dashboard and sets it as the home dashboard (default landing page).
+- Dashboard file: `grafana/dashboards/echo-multi-service.json`
+- Provisioning and auto-load configuration: `grafana/provisioning/`
+- Anyone who clones the repo and runs `docker compose up` will see this dashboard as the home page upon logging into Grafana.
+
+### Accessing Grafana
+- URL: [http://localhost:3000](http://localhost:3000)
+- After login, the "Echo Multi-Service HTTP Metrics" dashboard will automatically open as the home dashboard.
+
+---

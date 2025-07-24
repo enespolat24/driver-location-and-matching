@@ -29,6 +29,7 @@ func NewDriverHandler(driverService primary.DriverService) *DriverHandler {
 // @Success 200 {object} map[string]interface{}
 // @Router /health [get]
 func (h *DriverHandler) HealthCheck(c echo.Context) error {
+	// TODO: if i have more time i will also add a health check for the database and redis. unutma
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status":  "healthy",
 		"service": "driver-location-service",

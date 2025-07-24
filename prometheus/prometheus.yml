@@ -13,7 +13,7 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   # Driver Location Service
-  - job_name: 'driver-location-service'
+  - job_name: 'driver_location_service'
     static_configs:
       - targets: ['driver-location-service:8087']
     metrics_path: '/metrics'
@@ -21,7 +21,7 @@ scrape_configs:
     scrape_timeout: 5s
 
   # Matching Service
-  - job_name: 'matching-service'
+  - job_name: 'matching_service'
     static_configs:
       - targets: ['matching-service:8088']
     metrics_path: '/metrics'

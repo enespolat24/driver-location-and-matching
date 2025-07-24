@@ -1,0 +1,307 @@
+{
+    "id": null,
+    "uid": null,
+    "title": "Echo Multi-Service HTTP Metrics",
+    "tags": [
+        "echo",
+        "prometheus",
+        "multi-service"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "version": 5,
+    "refresh": "10s",
+    "panels": [
+        {
+            "type": "row",
+            "title": "HTTP Overview",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "collapsed": false,
+            "panels": []
+        },
+        {
+            "type": "stat",
+            "title": "Total HTTP Requests (driver-location-service, last 5m)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "sum(increase(driver_location_service_requests_total[5m]))",
+                    "legendFormat": "driver-location-service (5m)",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 0,
+                "y": 1
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Total HTTP Requests (matching-service, last 5m)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "sum(increase(matching_service_requests_total[5m]))",
+                    "legendFormat": "matching-service (5m)",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 6,
+                "y": 1
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Total HTTP Requests (driver-location-service, ALL TIME)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "sum(driver_location_service_requests_total)",
+                    "legendFormat": "driver-location-service (total)",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 12,
+                "y": 1
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Total HTTP Requests (matching-service, ALL TIME)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "sum(matching_service_requests_total)",
+                    "legendFormat": "matching-service (total)",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 18,
+                "y": 1
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "stat",
+            "title": "RPS (driver-location-service)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "sum(rate(driver_location_service_requests_total[1m]))",
+                    "legendFormat": "driver-location-service RPS",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 0,
+                "y": 5
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "req/s"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "stat",
+            "title": "RPS (matching-service)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "sum(rate(matching_service_requests_total[1m]))",
+                    "legendFormat": "matching-service RPS",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 6,
+                "y": 5
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "req/s"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Error Rate (driver-location-service)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "sum(increase(driver_location_service_requests_total{code=~\"5..\"}[5m])) / sum(increase(driver_location_service_requests_total[5m]))",
+                    "legendFormat": "error rate",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 12,
+                "y": 5
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Error Rate (matching-service)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "sum(increase(matching_service_requests_total{code=~\"5..\"}[5m])) / sum(increase(matching_service_requests_total[5m]))",
+                    "legendFormat": "error rate",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 18,
+                "y": 5
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "HTTP Request Rate (per service)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "sum(rate(driver_location_service_requests_total[1m]))",
+                    "legendFormat": "driver-location-service",
+                    "interval": ""
+                },
+                {
+                    "expr": "sum(rate(matching_service_requests_total[1m]))",
+                    "legendFormat": "matching-service",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 9
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "req/s"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "HTTP Request Duration (p95)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(driver_location_service_request_duration_seconds_bucket[5m])) by (le, url))",
+                    "legendFormat": "p95 driver-location-service",
+                    "interval": ""
+                },
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(matching_service_request_duration_seconds_bucket[5m])) by (le, url))",
+                    "legendFormat": "p95 matching-service",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 17
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "table",
+            "title": "HTTP Requests by Endpoint (last 5m)",
+            "datasource": "Prometheus",
+            "targets": [
+                {
+                    "expr": "sum by (url) (increase(driver_location_service_requests_total[5m]))",
+                    "legendFormat": "driver-location-service {{url}}",
+                    "interval": ""
+                },
+                {
+                    "expr": "sum by (url) (increase(matching_service_requests_total[5m]))",
+                    "legendFormat": "matching-service {{url}}",
+                    "interval": ""
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 25
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            }
+        }
+    ]
+}
