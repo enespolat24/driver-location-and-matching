@@ -16,12 +16,6 @@ Both APIs are built with clean, production-ready code and thorough error handlin
 API documentation is provided via OpenAPI, and unit/integration tests validate functionality. Additionally, a circuit breaker pattern is implemented to improve system resilience.
 
 
-
-## 📊 Test Coverage
-
-- **Driver Location Service**: xx% coverage
-- **Matching Service**: 83.3% coverage
-
 ## Project Diagram
 ![Project diagram](diagram.png)
 
