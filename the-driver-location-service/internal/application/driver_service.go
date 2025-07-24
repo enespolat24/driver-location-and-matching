@@ -22,8 +22,8 @@ type DriverApplicationService struct {
 var _ primary.DriverService = (*DriverApplicationService)(nil)
 
 const (
-	DriverCacheTTL = 1 * time.Minute // Individual driver cache
-	NearbyCacheTTL = 1 * time.Minute // Nearby search cache
+	DriverCacheTTL = 1 * time.Minute
+	NearbyCacheTTL = 1 * time.Minute
 )
 
 func NewDriverApplicationService(repo secondary.DriverRepository, cache secondary.DriverCache) *DriverApplicationService {
@@ -65,7 +65,6 @@ func (s *DriverApplicationService) CreateDriver(req domain.CreateDriverRequest) 
 	return driver, nil
 }
 
-// BatchCreateDrivers creates multiple drivers in a batch
 func (s *DriverApplicationService) BatchCreateDrivers(req domain.BatchCreateRequest) ([]*domain.Driver, error) {
 	if err := s.validator.Struct(req); err != nil {
 		return nil, fmt.Errorf("invalid request: %w", err)
@@ -86,10 +85,8 @@ func (s *DriverApplicationService) BatchCreateDrivers(req domain.BatchCreateRequ
 		return nil, fmt.Errorf("failed to batch create drivers: %w", err)
 	}
 
-	// For batch operations, just invalidate nearby cache
 	ctx := context.Background()
 	if s.cache != nil {
-		// Invalidate nearby cache since new drivers are added
 		if err := s.cache.InvalidateNearbyCache(ctx); err != nil {
 			fmt.Printf("Warning: failed to invalidate nearby cache: %v\n", err)
 		}
@@ -115,7 +112,7 @@ func (s *DriverApplicationService) SearchNearbyDrivers(req domain.SearchRequest)
 		if err != nil {
 			fmt.Printf("Warning: failed to get nearby drivers from cache: %v\n", err)
 		} else if cachedDrivers != nil {
-			return cachedDrivers, nil // Cache hit
+			return cachedDrivers, nil
 		}
 	}
 
@@ -154,7 +151,6 @@ func (s *DriverApplicationService) GetDriver(id string) (*domain.Driver, error) 
 		return nil, fmt.Errorf("failed to get driver: %w", err)
 	}
 
-	// Cache the result
 	if s.cache != nil {
 		if err := s.cache.Set(ctx, id, driver, DriverCacheTTL); err != nil {
 			fmt.Printf("Warning: failed to cache driver: %v\n", err)
@@ -207,7 +203,6 @@ func (s *DriverApplicationService) UpdateDriverLocation(id string, location doma
 		return fmt.Errorf("failed to update driver location: %w", err)
 	}
 
-	// Invalidate cache
 	ctx := context.Background()
 	if s.cache != nil {
 		if err := s.cache.Delete(ctx, id); err != nil {
@@ -234,7 +229,6 @@ func (s *DriverApplicationService) UpdateDriver(driver *domain.Driver) error {
 		return fmt.Errorf("failed to update driver: %w", err)
 	}
 
-	// Invalidate cache
 	ctx := context.Background()
 	if s.cache != nil {
 		if err := s.cache.Delete(ctx, driver.ID); err != nil {
