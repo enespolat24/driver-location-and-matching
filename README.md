@@ -12,7 +12,7 @@ Assuming the JWT will come from another service because the responsibility of th
 
 <br>
 
-**i've used batch processing to import driver locations from Coordinate.csv file**
+**i've used batch processing to import driver locations from Coordinate.csv**
 
 Both APIs are built with clean, production-ready code and thorough error handling for reliability. They follow good architectural practices, using the hexagonal architecture to ensure separation of concerns and ease of testing.
 
