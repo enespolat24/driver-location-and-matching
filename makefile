@@ -15,13 +15,11 @@ swagger: ## Update swagger docs for both services
 up: ## Setup .env files and start docker services
 	@echo "🔧 Setting up environment..."
 	@cp -n .env.example .env 2>/dev/null || true
-	@cp -n the-driver-location-service/.env.example the-driver-location-service/.env 2>/dev/null || true
-	@cp -n the-matching-service/.env.example the-matching-service/.env 2>/dev/null || true
 	@echo "🐳 Starting services..."
-	@docker-compose up -d
+	@docker compose up -d
 	@echo "✅ Services started!"
 
 down: ## Stop docker services
 	@echo "🛑 Stopping services..."
-	@docker-compose down
+	@docker compose down
 	@echo "✅ Services stopped!"
