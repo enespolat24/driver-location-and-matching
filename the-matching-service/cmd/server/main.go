@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
+	"the-matching-service/config"
 	_ "the-matching-service/docs"
-	"the-matching-service/internal/adapter/config"
 	httpadapter "the-matching-service/internal/adapter/http"
 	"the-matching-service/internal/application"
 	"the-matching-service/internal/domain"
@@ -21,7 +21,6 @@ import (
 // @in header
 // @name Authorization
 // @description Type "Bearer" followed by a space and JWT token.
-
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using system environment variables")

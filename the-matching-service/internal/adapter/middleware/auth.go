@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"the-matching-service/internal/adapter/config"
+	"the-matching-service/config"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
@@ -12,10 +12,6 @@ import (
 func JWTAuthMiddleware(cfg *config.Config) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if c.Path() == "/health" {
-				return next(c)
-			}
-
 			tokenString := c.Request().Header.Get("Authorization")
 			if tokenString == "" {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
@@ -47,8 +43,6 @@ func JWTAuthMiddleware(cfg *config.Config) echo.MiddlewareFunc {
 			}
 
 			c.Set("user", claims)
-			// i've added this to the context to check if the user is authenticated
-			// we assume user is authenticated if the authenticated claim is true
 			isAuth := false
 			if v, ok := claims["authenticated"]; ok {
 				if b, ok := v.(bool); ok && b {

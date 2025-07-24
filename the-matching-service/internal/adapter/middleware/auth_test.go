@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"the-matching-service/internal/adapter/config"
+	"the-matching-service/config"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
@@ -120,28 +120,6 @@ func TestJWTAuthMiddleware_authenticatedFalse(t *testing.T) {
 
 	middleware := JWTAuthMiddleware(cfg)(h)
 	assert.NoError(t, middleware(c))
-	assert.Equal(t, http.StatusOK, w.Code)
-}
-
-// TestJWTAuthMiddleware_HealthBypass tests that health endpoint bypasses authentication
-// Expected: Should allow access to /health endpoint without authentication
-func TestJWTAuthMiddleware_HealthBypass(t *testing.T) {
-	e := echo.New()
-	cfg := &config.Config{JWTSecret: "testsecret"}
-
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	w := httptest.NewRecorder()
-	c := e.NewContext(req, w)
-
-	c.SetPath("/health")
-
-	h := func(c echo.Context) error {
-		return c.String(http.StatusOK, "ok")
-	}
-
-	middleware := JWTAuthMiddleware(cfg)(h)
-	err := middleware(c)
-	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 

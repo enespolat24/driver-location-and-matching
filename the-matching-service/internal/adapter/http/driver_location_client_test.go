@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"the-matching-service/internal/adapter/config"
+	"the-matching-service/config"
 	"the-matching-service/internal/domain"
 
 	"github.com/stretchr/testify/assert"

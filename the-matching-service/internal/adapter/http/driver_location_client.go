@@ -71,7 +71,6 @@ func (c *DriverLocationClient) FindNearbyDrivers(ctx context.Context, location d
 		return nil, err
 	}
 
-	// Type assert the response from circuit breaker
 	resp, ok := result.(*http.Response)
 	if !ok || resp == nil {
 		return nil, fmt.Errorf("invalid response type from circuit breaker")

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"the-matching-service/internal/adapter/config"
+	"the-matching-service/config"
 	"the-matching-service/internal/adapter/middleware"
 	"the-matching-service/internal/application"
 	"the-matching-service/internal/domain"

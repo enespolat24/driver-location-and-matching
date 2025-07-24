@@ -1,7 +1,7 @@
 package httpadapter
 
 import (
-	"the-matching-service/internal/adapter/config"
+	"the-matching-service/config"
 	"the-matching-service/internal/adapter/middleware"
 
 	"github.com/labstack/echo-contrib/echoprometheus"
@@ -18,7 +18,6 @@ type Router struct {
 func NewRouter(handler *MatchHandler, cfg *config.Config) *Router {
 	e := echo.New()
 
-	// Logger, Recover ve CORS middleware'leri
 	e.Use(echoMiddleware.Logger())
 	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.CORS())
