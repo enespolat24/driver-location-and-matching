@@ -59,14 +59,10 @@ func (m *mockCache) SetNearbyDrivers(ctx context.Context, lat, lon, radius float
 	args := m.Called(ctx, lat, lon, radius, limit, drivers, ttl)
 	return args.Error(0)
 }
-func (m *mockCache) InvalidateNearbyCache(ctx context.Context) error {
-	args := m.Called(ctx)
-	return args.Error(0)
-}
 func (m *mockCache) IsHealthy(ctx context.Context) bool { return true }
 
 // TestCreateDriver_Success tests successful driver creation with valid request data
-// Expected: Should create driver successfully, cache the driver, invalidate nearby cache, and return driver with correct data
+// Expected: Should create driver successfully, cache the driver, and return driver with correct data
 func TestCreateDriver_Success(t *testing.T) {
 	repo := new(mockRepo)
 	cache := new(mockCache)
@@ -79,7 +75,6 @@ func TestCreateDriver_Success(t *testing.T) {
 
 	repo.On("Create", mock.AnythingOfType("*domain.Driver")).Return(nil)
 	cache.On("Set", mock.Anything, "driver1", mock.AnythingOfType("*domain.Driver"), mock.Anything).Return(nil)
-	cache.On("InvalidateNearbyCache", mock.Anything).Return(nil)
 
 	d, err := service.CreateDriver(req)
 	assert.NoError(t, err)
@@ -110,7 +105,6 @@ func TestCreateDriver_WithEmptyID(t *testing.T) {
 		}
 	}).Return(nil)
 	cache.On("Set", mock.Anything, "auto-generated-id", mock.AnythingOfType("*domain.Driver"), mock.Anything).Return(nil)
-	cache.On("InvalidateNearbyCache", mock.Anything).Return(nil)
 
 	d, err := service.CreateDriver(req)
 	assert.NoError(t, err)
@@ -171,7 +165,6 @@ func TestCreateDriver_CacheError(t *testing.T) {
 
 	repo.On("Create", mock.AnythingOfType("*domain.Driver")).Return(nil)
 	cache.On("Set", mock.Anything, "driver3", mock.AnythingOfType("*domain.Driver"), mock.Anything).Return(errors.New("cache error"))
-	cache.On("InvalidateNearbyCache", mock.Anything).Return(errors.New("cache error"))
 
 	d, err := service.CreateDriver(req)
 	assert.NoError(t, err)
@@ -379,7 +372,7 @@ func TestSearchNearbyDrivers_CacheError(t *testing.T) {
 }
 
 // TestUpdateDriverLocation_Success tests successful driver location update
-// Expected: Should update driver location, invalidate cache, and return no error
+// Expected: Should update driver location, delete from cache, and return no error
 func TestUpdateDriverLocation_Success(t *testing.T) {
 	repo := new(mockRepo)
 	cache := new(mockCache)
@@ -389,7 +382,6 @@ func TestUpdateDriverLocation_Success(t *testing.T) {
 	repo.On("GetByID", "d1").Return(drv, nil)
 	repo.On("Update", mock.Anything).Return(nil)
 	cache.On("Delete", mock.Anything, "d1").Return(nil)
-	cache.On("InvalidateNearbyCache", mock.Anything).Return(nil)
 	err := service.UpdateDriverLocation("d1", newLoc)
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)
@@ -470,7 +462,6 @@ func TestDeleteDriver_Success(t *testing.T) {
 	service := NewDriverApplicationService(repo, cache)
 	repo.On("Delete", "d1").Return(nil)
 	cache.On("Delete", mock.Anything, "d1").Return(nil)
-	cache.On("InvalidateNearbyCache", mock.Anything).Return(nil)
 	err := service.DeleteDriver("d1")
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)
@@ -518,7 +509,6 @@ func TestDeleteDriver_CacheError(t *testing.T) {
 
 	repo.On("Delete", "d1").Return(nil)
 	cache.On("Delete", mock.Anything, "d1").Return(errors.New("cache error"))
-	cache.On("InvalidateNearbyCache", mock.Anything).Return(errors.New("cache error"))
 
 	err := service.DeleteDriver("d1")
 	assert.NoError(t, err)
@@ -536,7 +526,6 @@ func TestUpdateDriver_Success(t *testing.T) {
 	drv := &domain.Driver{ID: "d1", Location: domain.NewPoint(1, 2)}
 	repo.On("Update", drv).Return(nil)
 	cache.On("Delete", mock.Anything, "d1").Return(nil)
-	cache.On("InvalidateNearbyCache", mock.Anything).Return(nil)
 	err := service.UpdateDriver(drv)
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)
@@ -586,7 +575,7 @@ func TestUpdateDriver_RepoError(t *testing.T) {
 }
 
 // TestBatchCreateDrivers_Success tests successful batch driver creation
-// Expected: Should create multiple drivers, invalidate nearby cache, and return all created drivers
+// Expected: Should create multiple drivers and return all created drivers
 func TestBatchCreateDrivers_Success(t *testing.T) {
 	repo := new(mockRepo)
 	cache := new(mockCache)
@@ -600,7 +589,6 @@ func TestBatchCreateDrivers_Success(t *testing.T) {
 	}
 
 	repo.On("BatchCreate", mock.Anything).Return(nil)
-	cache.On("InvalidateNearbyCache", mock.Anything).Return(nil).Maybe()
 
 	result, err := service.BatchCreateDrivers(req)
 	assert.NoError(t, err)
@@ -673,14 +661,12 @@ func TestBatchCreateDrivers_CacheError(t *testing.T) {
 	}
 
 	repo.On("BatchCreate", mock.Anything).Return(nil)
-	cache.On("InvalidateNearbyCache", mock.Anything).Return(errors.New("cache error"))
 
 	result, err := service.BatchCreateDrivers(req)
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
 
 	repo.AssertExpectations(t)
-	cache.AssertExpectations(t)
 }
 
 // TestBatchCreateDrivers_WithEmptyIDs tests batch driver creation with some empty IDs
@@ -707,7 +693,6 @@ func TestBatchCreateDrivers_WithEmptyIDs(t *testing.T) {
 			}
 		}
 	}).Return(nil)
-	cache.On("InvalidateNearbyCache", mock.Anything).Return(nil).Maybe()
 
 	result, err := service.BatchCreateDrivers(req)
 	assert.NoError(t, err)

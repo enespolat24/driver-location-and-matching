@@ -16,7 +16,7 @@ func TestLoadConfig_Defaults(t *testing.T) {
 	os.Unsetenv("DRIVER_LOCATION_API_KEY")
 
 	cfg := LoadConfig()
-	assert.Equal(t, "http://localhost:8086", cfg.DriverLocationBaseURL)
+	assert.Equal(t, "http://localhost:8087", cfg.DriverLocationBaseURL)
 	assert.Equal(t, ":8087", cfg.Port)
 	assert.Equal(t, "changeme", cfg.JWTSecret)
 	assert.Equal(t, "", cfg.DriverLocationAPIKey)
