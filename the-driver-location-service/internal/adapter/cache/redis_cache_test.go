@@ -129,6 +129,34 @@ func TestRedisDriverCache_GetNearbyDrivers_EmptyArray(t *testing.T) {
 	assert.Len(t, got, 0)
 }
 
+// TestRedisDriverCache_IsHealthy tests the health check functionality
+// Expected: Should return true when Redis is connected and responsive
+func TestRedisDriverCache_IsHealthy(t *testing.T) {
+	cache, cleanup := setupRedisTestCache(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	isHealthy := cache.IsHealthy(ctx)
+	assert.True(t, isHealthy, "Redis should be healthy when properly connected")
+}
+
+// TestRedisDriverCache_IsHealthy_Disconnected tests health check when Redis is not available
+// Expected: Should return false when Redis is not reachable
+func TestRedisDriverCache_IsHealthy_Disconnected(t *testing.T) {
+	invalidClient := redis.NewClient(&redis.Options{
+		Addr:     "invalid-host:9999",
+		Password: "",
+		DB:       0,
+	})
+
+	cache := NewRedisDriverCache(invalidClient)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	isHealthy := cache.IsHealthy(ctx)
+	assert.False(t, isHealthy, "Redis should not be healthy when connection is broken")
+}
+
 // TestRedisDriverCache_GetNearbyDrivers_LargeDataSet tests with larger data sets
 // Expected: Should handle large arrays of drivers without issues
 func TestRedisDriverCache_GetNearbyDrivers_LargeDataSet(t *testing.T) {
