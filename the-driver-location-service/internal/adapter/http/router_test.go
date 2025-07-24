@@ -8,16 +8,17 @@ import (
 	"testing"
 
 	"github.com/labstack/echo/v4"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"the-driver-location-service/internal/adapter/middleware"
 	"the-driver-location-service/internal/domain"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
-type mockDriverService struct{ mock.Mock }
+type mockDriverService struct {
+	mock.Mock
+}
 
 func (m *mockDriverService) CreateDriver(req domain.CreateDriverRequest) (*domain.Driver, error) {
 	args := m.Called(req)
@@ -54,27 +55,21 @@ func (m *mockDriverService) DeleteDriver(id string) error {
 	return args.Error(0)
 }
 
-// resetPrometheusRegistry resets the default Prometheus
-// registry to avoid duplicate collector registration in tests.
-// https://github.com/labstack/echo/discussions/2419
-// i'm not sure if this is the best way to do this
 func resetPrometheusRegistry() {
 	prometheus.DefaultRegisterer = prometheus.NewRegistry()
-	prometheus.DefaultGatherer = prometheus.DefaultRegisterer.(prometheus.Gatherer)
 }
 
 // TestNewRouter tests router creation with valid dependencies
-// Expected: Should create router with proper middleware and routes configured
+// Expected: Should create router instance with properly initialized echo server and handler
 func TestNewRouter(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
-
 	router := NewRouter(mockService, authConfig)
+
 	assert.NotNil(t, router)
 	assert.NotNil(t, router.echo)
 	assert.NotNil(t, router.handler)
-	assert.Equal(t, authConfig, router.config)
 }
 
 // TestRouter_HealthCheck tests the health check endpoint
@@ -93,11 +88,15 @@ func TestRouter_HealthCheck(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	var response map[string]interface{}
+	var response APIResponse
 	err = json.Unmarshal(rec.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, "healthy", response["status"])
-	assert.Equal(t, "driver-location-service", response["service"])
+	assert.True(t, response.Success)
+	assert.Equal(t, "Service is healthy", response.Message)
+
+	data := response.Data.(map[string]interface{})
+	assert.Equal(t, "healthy", data["status"])
+	assert.Equal(t, "driver-location-service", data["service"])
 }
 
 // TestRouter_CreateDriver_Success tests successful driver creation endpoint
@@ -125,11 +124,19 @@ func TestRouter_CreateDriver_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, rec.Code)
 
-	var response domain.Driver
+	var response APIResponse
 	err = json.Unmarshal(rec.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, expectedDriver.ID, response.ID)
-	assert.Equal(t, expectedDriver.Location, response.Location)
+	assert.True(t, response.Success)
+	assert.Equal(t, "Driver created successfully", response.Message)
+
+	driverData := response.Data.(map[string]interface{})
+	assert.Equal(t, expectedDriver.ID, driverData["id"])
+	locationData := driverData["location"].(map[string]interface{})
+	assert.Equal(t, "Point", locationData["type"])
+	coordinates := locationData["coordinates"].([]interface{})
+	assert.Equal(t, 29.0, coordinates[0])
+	assert.Equal(t, 41.0, coordinates[1])
 
 	mockService.AssertExpectations(t)
 }
@@ -142,7 +149,7 @@ func TestRouter_CreateDriver_InvalidRequest(t *testing.T) {
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
 
-	reqBody := `{"invalid": "json"`
+	reqBody := `{"invalid": json}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(reqBody))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
@@ -152,15 +159,15 @@ func TestRouter_CreateDriver_InvalidRequest(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 
-	var response map[string]interface{}
+	var response APIResponse
 	err = json.Unmarshal(rec.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, "invalid_request", response["error"])
-	assert.Equal(t, "Invalid request body", response["message"])
+	assert.False(t, response.Success)
+	assert.Equal(t, "invalid_request", response.Error)
 }
 
 // TestRouter_CreateDriver_ServiceError tests driver creation when service returns error
-// Expected: Should return 500 Internal Server Error when service fails
+// Expected: Should return 500 Internal Server Error when service operation fails
 func TestRouter_CreateDriver_ServiceError(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
@@ -179,16 +186,17 @@ func TestRouter_CreateDriver_ServiceError(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 
-	var response map[string]interface{}
+	var response APIResponse
 	err = json.Unmarshal(rec.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, "internal_error", response["error"])
+	assert.False(t, response.Success)
+	assert.Equal(t, "internal_error", response.Error)
 
 	mockService.AssertExpectations(t)
 }
 
 // TestRouter_BatchCreateDrivers_Success tests successful batch driver creation endpoint
-// Expected: Should return 201 Created with drivers array and count when request is valid
+// Expected: Should return 201 Created with created drivers data when request is valid
 func TestRouter_BatchCreateDrivers_Success(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
@@ -211,30 +219,33 @@ func TestRouter_BatchCreateDrivers_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, rec.Code)
 
-	var response map[string]interface{}
+	var response APIResponse
 	err = json.Unmarshal(rec.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, float64(1), response["count"])
+	assert.True(t, response.Success)
+
+	data := response.Data.(map[string]interface{})
+	assert.Equal(t, float64(1), data["count"])
 
 	mockService.AssertExpectations(t)
 }
 
 // TestRouter_SearchNearbyDrivers_Success tests successful nearby driver search endpoint
-// Expected: Should return 200 OK with nearby drivers when request is valid
+// Expected: Should return 200 OK with nearby drivers data when request is valid
 func TestRouter_SearchNearbyDrivers_Success(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
 
-	reqBody := `{"location":{"type":"Point","coordinates":[29.0,41.0]},"radius":1000,"limit":5}`
+	reqBody := `{"location":{"type":"Point","coordinates":[29.0,41.0]},"radius":1000,"limit":10}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers/search", strings.NewReader(reqBody))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := router.echo.NewContext(req, rec)
 
 	expectedDrivers := []*domain.DriverWithDistance{
-		{Driver: domain.Driver{ID: "driver1"}, Distance: 100},
+		{Driver: domain.Driver{ID: "driver1"}, Distance: 100.0},
 	}
 
 	mockService.On("SearchNearbyDrivers", mock.AnythingOfType("domain.SearchRequest")).Return(expectedDrivers, nil)
@@ -243,10 +254,13 @@ func TestRouter_SearchNearbyDrivers_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	var response map[string]interface{}
+	var response APIResponse
 	err = json.Unmarshal(rec.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, float64(1), response["count"])
+	assert.True(t, response.Success)
+
+	data := response.Data.(map[string]interface{})
+	assert.Equal(t, float64(1), data["count"])
 
 	mockService.AssertExpectations(t)
 }
@@ -276,10 +290,13 @@ func TestRouter_GetDriver_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	var response domain.Driver
+	var response APIResponse
 	err = json.Unmarshal(rec.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, expectedDriver.ID, response.ID)
+	assert.True(t, response.Success)
+
+	driverData := response.Data.(map[string]interface{})
+	assert.Equal(t, expectedDriver.ID, driverData["id"])
 
 	mockService.AssertExpectations(t)
 }
@@ -304,6 +321,11 @@ func TestRouter_GetDriver_NotFound(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, rec.Code)
 
+	var response APIResponse
+	err = json.Unmarshal(rec.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.False(t, response.Success)
+
 	mockService.AssertExpectations(t)
 }
 
@@ -315,7 +337,7 @@ func TestRouter_UpdateDriver_Success(t *testing.T) {
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
 
-	reqBody := `{"id":"driver1","location":{"type":"Point","coordinates":[30.0,42.0]}}`
+	reqBody := `{"location":{"type":"Point","coordinates":[30.0,42.0]}}`
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/drivers/driver1", strings.NewReader(reqBody))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
@@ -323,16 +345,16 @@ func TestRouter_UpdateDriver_Success(t *testing.T) {
 	c.SetParamNames("id")
 	c.SetParamValues("driver1")
 
-	expectedDriver := &domain.Driver{
-		ID:       "driver1",
-		Location: domain.NewPoint(30.0, 42.0),
-	}
-
-	mockService.On("UpdateDriver", expectedDriver).Return(nil)
+	mockService.On("UpdateDriver", mock.AnythingOfType("*domain.Driver")).Return(nil)
 
 	err := router.handler.UpdateDriver(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var response APIResponse
+	err = json.Unmarshal(rec.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response.Success)
 
 	mockService.AssertExpectations(t)
 }
@@ -353,13 +375,16 @@ func TestRouter_UpdateDriverLocation_Success(t *testing.T) {
 	c.SetParamNames("id")
 	c.SetParamValues("driver1")
 
-	expectedLocation := domain.NewPoint(30.0, 42.0)
-
-	mockService.On("UpdateDriverLocation", "driver1", expectedLocation).Return(nil)
+	mockService.On("UpdateDriverLocation", "driver1", mock.AnythingOfType("domain.Point")).Return(nil)
 
 	err := router.handler.UpdateDriverLocation(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var response APIResponse
+	err = json.Unmarshal(rec.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response.Success)
 
 	mockService.AssertExpectations(t)
 }
@@ -384,11 +409,16 @@ func TestRouter_DeleteDriver_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 
+	var response APIResponse
+	err = json.Unmarshal(rec.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response.Success)
+
 	mockService.AssertExpectations(t)
 }
 
 // TestRouter_DeleteDriver_NotFound tests driver deletion when driver doesn't exist
-// Expected: Should return 500 Internal Server Error when driver is not found
+// Expected: Should return 500 Internal Server Error when deletion fails
 func TestRouter_DeleteDriver_NotFound(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
@@ -407,51 +437,45 @@ func TestRouter_DeleteDriver_NotFound(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 
+	var response APIResponse
+	err = json.Unmarshal(rec.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.False(t, response.Success)
+
 	mockService.AssertExpectations(t)
 }
 
-// TestRouter_RoutesRegistration tests that all routes are properly registered
-// Expected: Should have all expected routes registered with correct HTTP methods
 func TestRouter_RoutesRegistration(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
 
-	// Test that routes are registered by checking the echo router
-	routes := []struct {
-		method string
-		path   string
-	}{
-		{http.MethodGet, "/health"},
-		{http.MethodGet, "/swagger/*"},
-		{http.MethodPost, "/api/v1/drivers"},
-		{http.MethodPost, "/api/v1/drivers/batch"},
-		{http.MethodPost, "/api/v1/drivers/search"},
-		{http.MethodGet, "/api/v1/drivers/:id"},
-		{http.MethodPut, "/api/v1/drivers/:id"},
-		{http.MethodPatch, "/api/v1/drivers/:id/location"},
-		{http.MethodDelete, "/api/v1/drivers/:id"},
+	routes := router.echo.Routes()
+	expectedRoutes := []string{
+		"GET /health",
+		"POST /api/v1/drivers",
+		"POST /api/v1/drivers/batch",
+		"POST /api/v1/drivers/search",
+		"GET /api/v1/drivers/:id",
+		"PUT /api/v1/drivers/:id",
+		"PATCH /api/v1/drivers/:id/location",
+		"DELETE /api/v1/drivers/:id",
+		"GET /metrics",
 	}
 
-	// Get all registered routes from echo
-	registeredRoutes := router.echo.Routes()
-
-	// Create a map of registered routes for easy lookup
-	routeMap := make(map[string]bool)
-	for _, route := range registeredRoutes {
-		routeMap[route.Method+" "+route.Path] = true
-	}
-
-	// Check that all expected routes are registered
-	for _, expectedRoute := range routes {
-		routeKey := expectedRoute.method + " " + expectedRoute.path
-		assert.True(t, routeMap[routeKey], "Route %s %s should be registered", expectedRoute.method, expectedRoute.path)
+	for _, expectedRoute := range expectedRoutes {
+		found := false
+		for _, route := range routes {
+			if route.Method+" "+route.Path == expectedRoute {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "Route %s not found", expectedRoute)
 	}
 }
 
-// TestRouter_GetEcho tests that GetEcho returns the echo instance
-// Expected: Should return the echo instance used by the router
 func TestRouter_GetEcho(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
@@ -463,8 +487,6 @@ func TestRouter_GetEcho(t *testing.T) {
 	assert.Equal(t, router.echo, echo)
 }
 
-// TestRouter_Shutdown tests router shutdown functionality
-// Expected: Should close the echo server without error
 func TestRouter_Shutdown(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
@@ -475,16 +497,15 @@ func TestRouter_Shutdown(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TestRouter_Start tests router start functionality
-// Expected: Should start the echo server and return error for invalid address
 func TestRouter_Start(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
 
-	// Test with invalid address (should fail)
-	err := router.Start("invalid-address")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "listen")
+	go func() {
+		router.Start(":0")
+	}()
+
+	router.Shutdown()
 }

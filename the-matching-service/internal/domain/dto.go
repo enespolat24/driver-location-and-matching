@@ -35,6 +35,13 @@ type DriverDistancePair struct {
 }
 
 type DriverLocationServiceResponse struct {
+	Success bool        `json:"success"`
+	Data    interface{} `json:"data,omitempty"`
+	Error   string      `json:"error,omitempty"`
+	Message string      `json:"message,omitempty"`
+}
+
+type DriverSearchData struct {
 	Count   int                  `json:"count"`
 	Drivers []DriverDistancePair `json:"drivers"`
 }

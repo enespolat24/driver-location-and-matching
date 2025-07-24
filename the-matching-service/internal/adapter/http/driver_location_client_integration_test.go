@@ -26,13 +26,17 @@ func TestDriverLocationClient_FindNearbyDrivers_integration(t *testing.T) {
 		assert.NotNil(t, req["radius"])
 
 		resp := domain.DriverLocationServiceResponse{
-			Count: 1,
-			Drivers: []domain.DriverDistancePair{
-				{
-					Driver:   domain.Driver{ID: "driver-1"},
-					Distance: 100.0,
+			Success: true,
+			Data: map[string]interface{}{
+				"count": 1,
+				"drivers": []domain.DriverDistancePair{
+					{
+						Driver:   domain.Driver{ID: "driver-1"},
+						Distance: 100.0,
+					},
 				},
 			},
+			Message: "Nearby drivers retrieved successfully",
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)

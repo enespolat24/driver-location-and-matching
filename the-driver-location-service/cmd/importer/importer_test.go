@@ -61,14 +61,14 @@ func TestParseDriverLocation_InvalidLongitude(t *testing.T) {
 }
 
 // TestProcessBatchHTTP_Success tests processBatchHTTP with a successful API response.
-// Expected: Should return nil error when API returns 201 Created.
+// Expected: Should return nil error when API returns 201 Created with success response.
 func TestProcessBatchHTTP_Success(t *testing.T) {
-	// Start a test server that always returns 201
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("Expected POST method, got %s", r.Method)
 		}
 		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`{"success": true, "data": {"count": 1, "drivers": [{"id": "test-driver"}]}, "message": "Drivers created successfully"}`))
 	}))
 	defer ts.Close()
 
@@ -84,11 +84,11 @@ func TestProcessBatchHTTP_Success(t *testing.T) {
 }
 
 // TestProcessBatchHTTP_APIError tests processBatchHTTP with a non-201 response.
-// Expected: Should return error when API returns non-201 status and error should contain response body.
+// Expected: Should return error when API returns non-201 status and error should contain response details.
 func TestProcessBatchHTTP_APIError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("bad request"))
+		w.Write([]byte(`{"success": false, "error": "validation_error", "message": "Invalid request body"}`))
 	}))
 	defer ts.Close()
 
@@ -100,8 +100,8 @@ func TestProcessBatchHTTP_APIError(t *testing.T) {
 	err := processBatchHTTP(batch)
 	if err == nil {
 		t.Error("Expected error for non-201 response, got nil")
-	} else if !strings.Contains(err.Error(), "bad request") {
-		t.Errorf("Expected error to contain 'bad request', got %v", err)
+	} else if !strings.Contains(err.Error(), "validation_error") {
+		t.Errorf("Expected error to contain 'validation_error', got %v", err)
 	}
 }
 
@@ -116,6 +116,48 @@ func TestProcessBatchHTTP_HTTPError(t *testing.T) {
 	err := processBatchHTTP(batch)
 	if err == nil {
 		t.Error("Expected error for unreachable server, got nil")
+	}
+}
+
+// TestProcessBatchHTTP_APIServiceError tests processBatchHTTP when API returns success=false
+// Expected: Should return error when API response indicates operation failure
+func TestProcessBatchHTTP_APIServiceError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`{"success": false, "error": "service_error", "message": "Database connection failed"}`))
+	}))
+	defer ts.Close()
+
+	oldURL := apiURL
+	apiURL = ts.URL
+	defer func() { apiURL = oldURL }()
+
+	batch := []CreateDriverRequest{{Location: Point{Type: "Point", Coordinates: []float64{1, 2}}}}
+	err := processBatchHTTP(batch)
+	if err == nil {
+		t.Error("Expected error for success=false response, got nil")
+	} else if !strings.Contains(err.Error(), "service_error") {
+		t.Errorf("Expected error to contain 'service_error', got %v", err)
+	}
+}
+
+// TestProcessBatchHTTP_InvalidResponseJSON tests processBatchHTTP with invalid JSON response
+// Expected: Should return error when API returns invalid JSON
+func TestProcessBatchHTTP_InvalidResponseJSON(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`invalid-json`))
+	}))
+	defer ts.Close()
+
+	oldURL := apiURL
+	apiURL = ts.URL
+	defer func() { apiURL = oldURL }()
+
+	batch := []CreateDriverRequest{{Location: Point{Type: "Point", Coordinates: []float64{1, 2}}}}
+	err := processBatchHTTP(batch)
+	if err == nil {
+		t.Error("Expected error for invalid JSON response, got nil")
 	}
 }
 

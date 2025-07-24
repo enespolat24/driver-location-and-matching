@@ -73,6 +73,23 @@ func TestDriverDistancePair_JSONTags(t *testing.T) {
 
 func TestDriverLocationServiceResponse_JSONTags(t *testing.T) {
 	response := &DriverLocationServiceResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"count": 2,
+			"drivers": []DriverDistancePair{
+				{Driver: Driver{ID: "driver-1"}, Distance: 100.0},
+				{Driver: Driver{ID: "driver-2"}, Distance: 200.0},
+			},
+		},
+		Message: "Nearby drivers retrieved successfully",
+	}
+
+	_, err := json.Marshal(response)
+	assert.NoError(t, err)
+}
+
+func TestDriverSearchData_JSONTags(t *testing.T) {
+	data := &DriverSearchData{
 		Count: 2,
 		Drivers: []DriverDistancePair{
 			{Driver: Driver{ID: "driver-1"}, Distance: 100.0},
@@ -80,6 +97,6 @@ func TestDriverLocationServiceResponse_JSONTags(t *testing.T) {
 		},
 	}
 
-	_, err := json.Marshal(response)
+	_, err := json.Marshal(data)
 	assert.NoError(t, err)
 }

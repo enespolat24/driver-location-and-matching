@@ -82,5 +82,29 @@ func (c *DriverLocationClient) FindNearbyDrivers(ctx context.Context, location d
 		return nil, err
 	}
 
-	return serviceResp.Drivers, nil
+	if !serviceResp.Success {
+		return nil, fmt.Errorf("driver location service error: %s - %s", serviceResp.Error, serviceResp.Message)
+	}
+
+	data, ok := serviceResp.Data.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid response data format from driver location service")
+	}
+
+	driversData, ok := data["drivers"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid drivers data format from driver location service")
+	}
+
+	var drivers []domain.DriverDistancePair
+	driversBytes, err := json.Marshal(driversData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal drivers data: %w", err)
+	}
+
+	if err := json.Unmarshal(driversBytes, &drivers); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal drivers: %w", err)
+	}
+
+	return drivers, nil
 }

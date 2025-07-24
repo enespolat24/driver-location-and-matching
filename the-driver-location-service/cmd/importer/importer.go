@@ -136,6 +136,13 @@ type BatchCreateRequest struct {
 	Drivers []CreateDriverRequest `json:"drivers"`
 }
 
+type APIResponse struct {
+	Success bool        `json:"success"`
+	Data    interface{} `json:"data,omitempty"`
+	Error   string      `json:"error,omitempty"`
+	Message string      `json:"message,omitempty"`
+}
+
 func processBatchHTTP(batch []CreateDriverRequest) error {
 	batchReq := BatchCreateRequest{Drivers: batch}
 	body, err := json.Marshal(batchReq)
@@ -158,13 +165,34 @@ func processBatchHTTP(batch []CreateDriverRequest) error {
 	}
 	defer resp.Body.Close()
 
+	var responseBody bytes.Buffer
+	responseBody.ReadFrom(resp.Body)
+
 	if resp.StatusCode != http.StatusCreated {
-		var respBody bytes.Buffer
-		respBody.ReadFrom(resp.Body)
-		return fmt.Errorf("API error: %s", respBody.String())
+		var apiResp APIResponse
+		if err := json.Unmarshal(responseBody.Bytes(), &apiResp); err == nil {
+			return fmt.Errorf("API error (status %d): %s - %s", resp.StatusCode, apiResp.Error, apiResp.Message)
+		}
+		return fmt.Errorf("API error (status %d): %s", resp.StatusCode, responseBody.String())
 	}
 
-	log.Printf("Batch import success, count: %d", len(batch))
+	var apiResp APIResponse
+	if err := json.Unmarshal(responseBody.Bytes(), &apiResp); err != nil {
+		return fmt.Errorf("failed to parse API response: %w", err)
+	}
+
+	if !apiResp.Success {
+		return fmt.Errorf("API operation failed: %s - %s", apiResp.Error, apiResp.Message)
+	}
+
+	var createdCount int
+	if data, ok := apiResp.Data.(map[string]interface{}); ok {
+		if count, ok := data["count"].(float64); ok {
+			createdCount = int(count)
+		}
+	}
+
+	log.Printf("Batch import success, requested: %d, created: %d", len(batch), createdCount)
 	return nil
 }
 
