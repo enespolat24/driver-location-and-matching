@@ -15,7 +15,7 @@ type Config struct {
 func LoadConfig() *Config {
 	baseURL := os.Getenv("DRIVER_LOCATION_BASE_URL")
 	if baseURL == "" {
-		baseURL = "http://localhost:8086"
+		baseURL = "http://localhost:8087"
 	}
 
 	port := os.Getenv("PORT")
