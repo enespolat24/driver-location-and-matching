@@ -80,3 +80,136 @@ func TestRedisDriverCache_SetGetNearbyDrivers(t *testing.T) {
 	assert.Equal(t, "d1", got[0].Driver.ID)
 	assert.Equal(t, "d2", got[1].Driver.ID)
 }
+
+// TestRedisDriverCache_GetNearbyDrivers_CacheMiss tests when key doesn't exist in cache
+// Expected: Should return nil, nil when cache key is not found (cache miss)
+func TestRedisDriverCache_GetNearbyDrivers_CacheMiss(t *testing.T) {
+	cache, cleanup := setupRedisTestCache(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	lat, lon, radius, limit := 50.0, 30.0, 1500.0, 5
+	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
+	require.NoError(t, err)
+	assert.Nil(t, got)
+}
+
+// TestRedisDriverCache_GetNearbyDrivers_CorruptData tests unmarshal error handling
+// Expected: Should return error when cached data is corrupted/invalid JSON
+func TestRedisDriverCache_GetNearbyDrivers_CorruptData(t *testing.T) {
+	cache, cleanup := setupRedisTestCache(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	lat, lon, radius, limit := 45.0, 35.0, 2000.0, 3
+	key := fmt.Sprintf("nearby:%.6f:%.6f:%.0f:%d", lat, lon, radius, limit)
+
+	err := cache.client.Set(ctx, key, "invalid-json-data", time.Minute).Err()
+	require.NoError(t, err)
+
+	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
+	assert.Error(t, err)
+	assert.Nil(t, got)
+	assert.Contains(t, err.Error(), "failed to unmarshal nearby drivers")
+}
+
+// TestRedisDriverCache_GetNearbyDrivers_EmptyArray tests empty driver array
+// Expected: Should successfully handle empty driver arrays
+func TestRedisDriverCache_GetNearbyDrivers_EmptyArray(t *testing.T) {
+	cache, cleanup := setupRedisTestCache(t)
+	defer cleanup()
+	ctx := context.Background()
+	emptyDrivers := []*domain.DriverWithDistance{}
+	lat, lon, radius, limit := 42.0, 32.0, 1200.0, 4
+	require.NoError(t, cache.SetNearbyDrivers(ctx, lat, lon, radius, limit, emptyDrivers, 2*time.Second))
+
+	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
+	require.NoError(t, err)
+	assert.NotNil(t, got)
+	assert.Len(t, got, 0)
+}
+
+// TestRedisDriverCache_GetNearbyDrivers_LargeDataSet tests with larger data sets
+// Expected: Should handle large arrays of drivers without issues
+func TestRedisDriverCache_GetNearbyDrivers_LargeDataSet(t *testing.T) {
+	cache, cleanup := setupRedisTestCache(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	var drivers []*domain.DriverWithDistance
+	for i := 0; i < 100; i++ {
+		drivers = append(drivers, &domain.DriverWithDistance{
+			Driver:   domain.Driver{ID: fmt.Sprintf("driver_%d", i)},
+			Distance: float64(i * 10),
+		})
+	}
+
+	lat, lon, radius, limit := 43.0, 33.0, 3000.0, 100
+	require.NoError(t, cache.SetNearbyDrivers(ctx, lat, lon, radius, limit, drivers, 2*time.Second))
+
+	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
+	require.NoError(t, err)
+	assert.Len(t, got, 100)
+	assert.Equal(t, "driver_0", got[0].Driver.ID)
+	assert.Equal(t, "driver_99", got[99].Driver.ID)
+}
+
+// TestRedisDriverCache_GetNearbyDrivers_TTLExpiration tests TTL expiration
+// Expected: Should return nil when data has expired
+func TestRedisDriverCache_GetNearbyDrivers_TTLExpiration(t *testing.T) {
+	cache, cleanup := setupRedisTestCache(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	drivers := []*domain.DriverWithDistance{
+		{Driver: domain.Driver{ID: "temp_driver"}, Distance: 50},
+	}
+	lat, lon, radius, limit := 44.0, 34.0, 500.0, 1
+
+	// Set with very short TTL
+	require.NoError(t, cache.SetNearbyDrivers(ctx, lat, lon, radius, limit, drivers, 100*time.Millisecond))
+
+	// Should exist immediately
+	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
+	require.NoError(t, err)
+	assert.Len(t, got, 1)
+
+	// Wait for expiration
+	time.Sleep(150 * time.Millisecond)
+
+	// Should be expired now
+	got, err = cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
+	require.NoError(t, err)
+	assert.Nil(t, got) // Should return nil after expiration
+}
+
+// TestRedisDriverCache_GetNearbyDrivers_KeyGeneration tests different key generation scenarios
+// Expected: Should generate different keys for different parameters
+func TestRedisDriverCache_GetNearbyDrivers_KeyGeneration(t *testing.T) {
+	cache, cleanup := setupRedisTestCache(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	drivers1 := []*domain.DriverWithDistance{
+		{Driver: domain.Driver{ID: "set1_driver"}, Distance: 100},
+	}
+	drivers2 := []*domain.DriverWithDistance{
+		{Driver: domain.Driver{ID: "set2_driver"}, Distance: 200},
+	}
+
+	// Set data with different parameters (should generate different keys)
+	lat1, lon1, radius1, limit1 := 40.0, 30.0, 1000.0, 5
+	lat2, lon2, radius2, limit2 := 40.0, 30.0, 2000.0, 5
+
+	require.NoError(t, cache.SetNearbyDrivers(ctx, lat1, lon1, radius1, limit1, drivers1, time.Minute))
+	require.NoError(t, cache.SetNearbyDrivers(ctx, lat2, lon2, radius2, limit2, drivers2, time.Minute))
+
+	// Should get different results for different keys
+	got1, err := cache.GetNearbyDrivers(ctx, lat1, lon1, radius1, limit1)
+	require.NoError(t, err)
+	assert.Equal(t, "set1_driver", got1[0].Driver.ID)
+
+	got2, err := cache.GetNearbyDrivers(ctx, lat2, lon2, radius2, limit2)
+	require.NoError(t, err)
+	assert.Equal(t, "set2_driver", got2[0].Driver.ID)
+}
