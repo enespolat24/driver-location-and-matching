@@ -11,7 +11,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"the-driver-location-service/internal/adapter/config"
+	"the-driver-location-service/config"
 	"the-driver-location-service/internal/domain"
 )
 

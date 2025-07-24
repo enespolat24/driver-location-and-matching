@@ -13,9 +13,9 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"the-driver-location-service/config"
 	_ "the-driver-location-service/docs"
 	"the-driver-location-service/internal/adapter/cache"
-	"the-driver-location-service/internal/adapter/config"
 	"the-driver-location-service/internal/adapter/db"
 	httpAdapter "the-driver-location-service/internal/adapter/http"
 	"the-driver-location-service/internal/adapter/middleware"

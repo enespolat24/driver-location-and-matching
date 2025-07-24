@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"the-driver-location-service/internal/adapter/config"
+	"the-driver-location-service/config"
 	"the-driver-location-service/internal/domain"
 	"the-driver-location-service/internal/ports/secondary"
 )

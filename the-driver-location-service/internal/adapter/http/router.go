@@ -10,15 +10,12 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
-// Router holds the HTTP router configuration
 type Router struct {
 	echo    *echo.Echo
 	handler *DriverHandler
 	config  middleware.AuthConfig
 }
 
-// NewRouter creates a new HTTP router
-// this is dependent to echo framework. todo: make it independent
 func NewRouter(driverService primary.DriverService, authConfig middleware.AuthConfig) *Router {
 	e := echo.New()
 	handler := NewDriverHandler(driverService)
@@ -40,17 +37,6 @@ func (r *Router) setupMiddleware() {
 	r.echo.Use(echomiddleware.Recover())
 	r.echo.Use(echomiddleware.CORS())
 	r.echo.Use(echoprometheus.NewMiddleware("driver_location_service"))
-
-	auth := middleware.APIKeyAuthMiddleware(r.config)
-
-	r.echo.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			if c.Request().URL.Path == "/health" || c.Request().URL.Path == "/" || c.Request().URL.Path == "/metrics" {
-				return next(c)
-			}
-			return auth(next)(c)
-		}
-	})
 }
 
 func (r *Router) setupRoutes() {
@@ -63,6 +49,7 @@ func (r *Router) setupRoutes() {
 
 	// Driver routes
 	drivers := v1.Group("/drivers")
+	drivers.Use(middleware.APIKeyAuthMiddleware(r.config))
 	{
 		drivers.POST("", r.handler.CreateDriver)                       // Create single driver
 		drivers.POST("/batch", r.handler.BatchCreateDrivers)           // Batch create drivers

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -16,8 +17,10 @@ type AuthConfig struct {
 func APIKeyAuthMiddleware(config AuthConfig) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-
+			fmt.Println("APIKeyAuthMiddleware geldi")
 			apiKey := c.Request().Header.Get("X-API-Key")
+			fmt.Println("apiKey", apiKey)
+			fmt.Println("config.MatchingAPIKey", config.MatchingAPIKey)
 			if apiKey == "" {
 				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 					"error":   "unauthorized",

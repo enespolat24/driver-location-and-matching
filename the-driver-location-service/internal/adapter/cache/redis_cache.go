@@ -8,7 +8,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"the-driver-location-service/internal/adapter/config"
+	"the-driver-location-service/config"
 	"the-driver-location-service/internal/domain"
 	"the-driver-location-service/internal/ports/secondary"
 )
