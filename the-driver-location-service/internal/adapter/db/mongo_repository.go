@@ -15,7 +15,6 @@ import (
 	"the-driver-location-service/internal/ports/secondary"
 )
 
-// MongoDriverRepository implements the DriverRepository interface using MongoDB
 type MongoDriverRepository struct {
 	client     *mongo.Client
 	database   *mongo.Database
@@ -37,7 +36,6 @@ func NewMongoDriverRepository(cfg *config.Config) (*MongoDriverRepository, error
 		return nil, fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
 
-	// Ping the database
 	if err := client.Ping(ctx, nil); err != nil {
 		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
@@ -114,7 +112,6 @@ func (r *MongoDriverRepository) BatchCreate(drivers []*domain.Driver) error {
 	return nil
 }
 
-// SearchNearby is a method that searches for nearby drivers using MongoDB's geospatial query
 // https://www.mongodb.com/docs/manual/reference/operator/query/near/
 func (r *MongoDriverRepository) SearchNearby(location domain.Point, radiusMeters float64, limit int) ([]*domain.DriverWithDistance, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -145,7 +142,6 @@ func (r *MongoDriverRepository) SearchNearby(location domain.Point, radiusMeters
 		return nil, fmt.Errorf("failed to decode drivers: %w", err)
 	}
 
-	// Calculate distances and create result
 	result := make([]*domain.DriverWithDistance, len(drivers))
 	for i, driver := range drivers {
 		distance := location.Distance(driver.Location)
