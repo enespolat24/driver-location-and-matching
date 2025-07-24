@@ -43,9 +43,6 @@ func TestLoadConfig_DefaultValues(t *testing.T) {
 
 	// Test auth defaults
 	assert.Equal(t, "default-matching-api-key", config.Auth.MatchingAPIKey)
-
-	// Test app defaults
-	assert.Equal(t, "production", config.App.Environment)
 }
 
 // TestLoadConfig_CustomValues tests config loading with custom environment variables
@@ -106,8 +103,6 @@ func TestLoadConfig_CustomValues(t *testing.T) {
 	// Test custom auth values
 	assert.Equal(t, "custom-api-key", config.Auth.MatchingAPIKey)
 
-	// Test custom app values
-	assert.Equal(t, "development", config.App.Environment)
 }
 
 // TestLoadConfig_InvalidDurationValues tests config loading with invalid duration values
@@ -293,45 +288,6 @@ func TestConfig_Validate_EmptyAPIKey(t *testing.T) {
 	assert.Contains(t, err.Error(), "matching API key is required")
 }
 
-// TestConfig_IsDevelopment tests environment detection for development
-// Expected: Should return true when environment is set to development
-func TestConfig_IsDevelopment(t *testing.T) {
-	config := &Config{
-		App: AppConfig{
-			Environment: "development",
-		},
-	}
-
-	assert.True(t, config.IsDevelopment())
-	assert.False(t, config.IsProduction())
-}
-
-// TestConfig_IsProduction tests environment detection for production
-// Expected: Should return true when environment is set to production
-func TestConfig_IsProduction(t *testing.T) {
-	config := &Config{
-		App: AppConfig{
-			Environment: "production",
-		},
-	}
-
-	assert.True(t, config.IsProduction())
-	assert.False(t, config.IsDevelopment())
-}
-
-// TestConfig_IsProduction_OtherEnvironment tests environment detection for other environments
-// Expected: Should return false for both development and production when environment is different
-func TestConfig_IsProduction_OtherEnvironment(t *testing.T) {
-	config := &Config{
-		App: AppConfig{
-			Environment: "staging",
-		},
-	}
-
-	assert.False(t, config.IsProduction())
-	assert.False(t, config.IsDevelopment())
-}
-
 // TestConfig_GetAddress tests server address construction
 // Expected: Should return properly formatted host:port address
 func TestConfig_GetAddress(t *testing.T) {
@@ -374,14 +330,12 @@ func TestConfig_GetAddress_EmptyPort(t *testing.T) {
 	assert.Equal(t, "localhost:", address)
 }
 
-// Helper functions for test setup and cleanup
-
 func clearConfigEnvVars() {
 	envVars := []string{
 		"PORT", "HOST", "READ_TIMEOUT", "WRITE_TIMEOUT", "IDLE_TIMEOUT",
 		"MONGO_URI", "MONGO_DATABASE", "MONGO_CONNECT_TIMEOUT", "MONGO_MAX_POOL_SIZE", "MONGO_MIN_POOL_SIZE",
 		"REDIS_ADDRESS", "REDIS_PASSWORD", "REDIS_DB", "REDIS_MAX_RETRIES", "REDIS_POOL_SIZE", "REDIS_TIMEOUT", "REDIS_ENABLED",
-		"MATCHING_API_KEY", "ENVIRONMENT",
+		"MATCHING_API_KEY",
 	}
 
 	for _, envVar := range envVars {

@@ -12,7 +12,6 @@ type Config struct {
 	Database DatabaseConfig `json:"database"`
 	Redis    RedisConfig    `json:"redis"`
 	Auth     AuthConfig     `json:"auth"`
-	App      AppConfig      `json:"app"`
 }
 
 type ServerConfig struct {
@@ -33,10 +32,6 @@ type DatabaseConfig struct {
 
 type AuthConfig struct {
 	MatchingAPIKey string `json:"matching_api_key"`
-}
-
-type AppConfig struct {
-	Environment string `json:"environment"`
 }
 
 type RedisConfig struct {
@@ -77,9 +72,6 @@ func LoadConfig() (*Config, error) {
 		Auth: AuthConfig{
 			MatchingAPIKey: getEnv("MATCHING_API_KEY", "default-matching-api-key"),
 		},
-		App: AppConfig{
-			Environment: getEnv("ENVIRONMENT", "production"),
-		},
 	}
 
 	if err := config.Validate(); err != nil {
@@ -108,15 +100,6 @@ func (c *Config) Validate() error {
 
 	return nil
 }
-
-func (c *Config) IsDevelopment() bool {
-	return c.App.Environment == "development"
-}
-
-func (c *Config) IsProduction() bool {
-	return c.App.Environment == "production"
-}
-
 func (c *Config) GetAddress() string {
 	return c.Server.Host + ":" + c.Server.Port
 }

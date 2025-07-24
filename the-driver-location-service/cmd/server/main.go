@@ -31,7 +31,6 @@ import (
 // @in header
 // @name X-API-KEY
 // @description Type X-API-KEY followed by a space and API key.
-
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println(".env file not found or could not be loaded, environment variables will be read from the shell")
@@ -40,12 +39,6 @@ func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
-	}
-
-	if cfg.IsDevelopment() {
-		log.Println("Starting Driver Location Service in development mode...")
-	} else {
-		log.Println("Starting Driver Location Service in production mode...")
 	}
 
 	driverRepo, err := db.NewMongoDriverRepository(cfg)
@@ -57,8 +50,7 @@ func main() {
 
 	redisClient, err := cache.NewRedisClient(cfg.Redis)
 	if err != nil {
-		log.Printf("Warning: Failed to connect to Redis: %v", err)
-		log.Println("Continuing without cache...")
+		log.Fatalf("Warning: Failed to connect to Redis: %v", err)
 	} else {
 		log.Println("Connected to Redis successfully")
 		driverCache = cache.NewRedisDriverCache(redisClient)
@@ -72,7 +64,7 @@ func main() {
 	var driverService primary.DriverService = application.NewDriverApplicationService(driverRepo, driverCache)
 
 	go func() {
-		if err := runDataImport(driverRepo, driverService); err != nil {
+		if err := runDataImport(); err != nil {
 			log.Printf("Warning: Data import failed: %v", err)
 			log.Println("Continuing without imported data...")
 		}
@@ -113,14 +105,14 @@ func main() {
 		log.Printf("Server forced to shutdown: %v", err)
 	}
 
-	log.Println("Server exited")
+	log.Println("Server exited gracefully")
 }
 
-func runDataImport(driverRepo secondary.DriverRepository, driverService primary.DriverService) error {
+func runDataImport() error {
 	log.Println("Starting data import...")
 
 	cmd := exec.Command("./importer")
-	cmd.Dir = "/app" // Set working directory to app directory
+	cmd.Dir = "/app" // Set working directory to app directory (containerized)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
