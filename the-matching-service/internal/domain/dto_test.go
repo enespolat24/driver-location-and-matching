@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestMatchRequest_CreateRider tests the CreateRider method of MatchRequest.
+// Expected: Should create a Rider with correct ID and location.
 func TestMatchRequest_CreateRider(t *testing.T) {
 	req := &MatchRequest{
 		Location: Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}},
@@ -20,6 +22,8 @@ func TestMatchRequest_CreateRider(t *testing.T) {
 	assert.Equal(t, req.Location, rider.Location)
 }
 
+// TestNewMatchResponse tests the NewMatchResponse function.
+// Expected: Should create a MatchResponse with correct driver, rider, and distance.
 func TestNewMatchResponse(t *testing.T) {
 	result := &MatchResult{
 		RiderID:  "rider-123",
@@ -34,6 +38,8 @@ func TestNewMatchResponse(t *testing.T) {
 	assert.Equal(t, result.Distance, response.Distance)
 }
 
+// TestMatchRequest_JSONTags tests JSON marshaling of MatchRequest.
+// Expected: Should marshal without error.
 func TestMatchRequest_JSONTags(t *testing.T) {
 	req := &MatchRequest{
 		Location: Location{Type: "Point", Coordinates: [2]float64{0, 0}},
@@ -44,6 +50,8 @@ func TestMatchRequest_JSONTags(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TestMatchResponse_JSONTags tests JSON marshaling of MatchResponse.
+// Expected: Should marshal without error.
 func TestMatchResponse_JSONTags(t *testing.T) {
 	response := &MatchResponse{
 		Driver:   "driver-123",
@@ -55,6 +63,8 @@ func TestMatchResponse_JSONTags(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TestDriverDistancePair_JSONTags tests JSON marshaling of DriverDistancePair.
+// Expected: Should marshal without error.
 func TestDriverDistancePair_JSONTags(t *testing.T) {
 	pair := &DriverDistancePair{
 		Driver:   Driver{ID: "driver-123"},
@@ -65,6 +75,8 @@ func TestDriverDistancePair_JSONTags(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TestDriverLocationServiceResponse_JSONTags tests JSON marshaling of DriverLocationServiceResponse.
+// Expected: Should marshal without error.
 func TestDriverLocationServiceResponse_JSONTags(t *testing.T) {
 	response := &DriverLocationServiceResponse{
 		Success: true,
@@ -82,6 +94,8 @@ func TestDriverLocationServiceResponse_JSONTags(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TestDriverSearchData_JSONTags tests JSON marshaling of DriverSearchData.
+// Expected: Should marshal without error.
 func TestDriverSearchData_JSONTags(t *testing.T) {
 	data := &DriverSearchData{
 		Count: 2,
