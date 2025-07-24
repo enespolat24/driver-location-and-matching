@@ -47,6 +47,8 @@ func setupRedisTestCache(t *testing.T) (*RedisDriverCache, func()) {
 	return cache, cleanup
 }
 
+// TestRedisDriverCache_SetGetDelete tests basic cache operations (set, get, delete)
+// Expected: Should successfully store, retrieve, and delete driver data from Redis cache
 func TestRedisDriverCache_SetGetDelete(t *testing.T) {
 	cache, cleanup := setupRedisTestCache(t)
 	defer cleanup()
@@ -64,69 +66,33 @@ func TestRedisDriverCache_SetGetDelete(t *testing.T) {
 	assert.Nil(t, gone)
 }
 
-func TestRedisDriverCache_SetGetNearbyDrivers(t *testing.T) {
-	cache, cleanup := setupRedisTestCache(t)
-	defer cleanup()
-	ctx := context.Background()
-	drivers := []*domain.DriverWithDistance{
-		{Driver: domain.Driver{ID: "d1"}, Distance: 100},
-		{Driver: domain.Driver{ID: "d2"}, Distance: 200},
-	}
-	lat, lon, radius, limit := 41.0, 29.0, 1000.0, 2
-	require.NoError(t, cache.SetNearbyDrivers(ctx, lat, lon, radius, limit, drivers, 2*time.Second))
-	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
-	require.NoError(t, err)
-	assert.Len(t, got, 2)
-	assert.Equal(t, "d1", got[0].Driver.ID)
-	assert.Equal(t, "d2", got[1].Driver.ID)
-}
-
-// TestRedisDriverCache_GetNearbyDrivers_CacheMiss tests when key doesn't exist in cache
+// TestRedisDriverCache_Get_CacheMiss tests cache retrieval when key doesn't exist
 // Expected: Should return nil, nil when cache key is not found (cache miss)
-func TestRedisDriverCache_GetNearbyDrivers_CacheMiss(t *testing.T) {
+func TestRedisDriverCache_Get_CacheMiss(t *testing.T) {
 	cache, cleanup := setupRedisTestCache(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	lat, lon, radius, limit := 50.0, 30.0, 1500.0, 5
-	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
+	got, err := cache.Get(ctx, "non-existent-driver")
 	require.NoError(t, err)
 	assert.Nil(t, got)
 }
 
-// TestRedisDriverCache_GetNearbyDrivers_CorruptData tests unmarshal error handling
+// TestRedisDriverCache_Get_CorruptData tests error handling when cached data is corrupted
 // Expected: Should return error when cached data is corrupted/invalid JSON
-func TestRedisDriverCache_GetNearbyDrivers_CorruptData(t *testing.T) {
+func TestRedisDriverCache_Get_CorruptData(t *testing.T) {
 	cache, cleanup := setupRedisTestCache(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	lat, lon, radius, limit := 45.0, 35.0, 2000.0, 3
-	key := fmt.Sprintf("nearby:%.6f:%.6f:%.0f:%d", lat, lon, radius, limit)
-
+	key := "driver:corrupt-test"
 	err := cache.client.Set(ctx, key, "invalid-json-data", time.Minute).Err()
 	require.NoError(t, err)
 
-	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
+	got, err := cache.Get(ctx, "corrupt-test")
 	assert.Error(t, err)
 	assert.Nil(t, got)
-	assert.Contains(t, err.Error(), "failed to unmarshal nearby drivers")
-}
-
-// TestRedisDriverCache_GetNearbyDrivers_EmptyArray tests empty driver array
-// Expected: Should successfully handle empty driver arrays
-func TestRedisDriverCache_GetNearbyDrivers_EmptyArray(t *testing.T) {
-	cache, cleanup := setupRedisTestCache(t)
-	defer cleanup()
-	ctx := context.Background()
-	emptyDrivers := []*domain.DriverWithDistance{}
-	lat, lon, radius, limit := 42.0, 32.0, 1200.0, 4
-	require.NoError(t, cache.SetNearbyDrivers(ctx, lat, lon, radius, limit, emptyDrivers, 2*time.Second))
-
-	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
-	require.NoError(t, err)
-	assert.NotNil(t, got)
-	assert.Len(t, got, 0)
+	assert.Contains(t, err.Error(), "failed to unmarshal driver")
 }
 
 // TestRedisDriverCache_IsHealthy tests the health check functionality
@@ -157,87 +123,60 @@ func TestRedisDriverCache_IsHealthy_Disconnected(t *testing.T) {
 	assert.False(t, isHealthy, "Redis should not be healthy when connection is broken")
 }
 
-// TestRedisDriverCache_GetNearbyDrivers_LargeDataSet tests with larger data sets
-// Expected: Should handle large arrays of drivers without issues
-func TestRedisDriverCache_GetNearbyDrivers_LargeDataSet(t *testing.T) {
+// TestRedisDriverCache_TTLExpiration tests TTL expiration functionality
+// Expected: Should return nil when data has expired after TTL timeout
+func TestRedisDriverCache_TTLExpiration(t *testing.T) {
 	cache, cleanup := setupRedisTestCache(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	var drivers []*domain.DriverWithDistance
-	for i := 0; i < 100; i++ {
-		drivers = append(drivers, &domain.DriverWithDistance{
-			Driver:   domain.Driver{ID: fmt.Sprintf("driver_%d", i)},
-			Distance: float64(i * 10),
-		})
-	}
+	driver := &domain.Driver{ID: "temp_driver", Location: domain.NewPoint(29, 41)}
 
-	lat, lon, radius, limit := 43.0, 33.0, 3000.0, 100
-	require.NoError(t, cache.SetNearbyDrivers(ctx, lat, lon, radius, limit, drivers, 2*time.Second))
+	require.NoError(t, cache.Set(ctx, driver.ID, driver, 100*time.Millisecond))
 
-	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
+	got, err := cache.Get(ctx, driver.ID)
 	require.NoError(t, err)
-	assert.Len(t, got, 100)
-	assert.Equal(t, "driver_0", got[0].Driver.ID)
-	assert.Equal(t, "driver_99", got[99].Driver.ID)
-}
+	assert.Equal(t, driver.ID, got.ID)
 
-// TestRedisDriverCache_GetNearbyDrivers_TTLExpiration tests TTL expiration
-// Expected: Should return nil when data has expired
-func TestRedisDriverCache_GetNearbyDrivers_TTLExpiration(t *testing.T) {
-	cache, cleanup := setupRedisTestCache(t)
-	defer cleanup()
-	ctx := context.Background()
-
-	drivers := []*domain.DriverWithDistance{
-		{Driver: domain.Driver{ID: "temp_driver"}, Distance: 50},
-	}
-	lat, lon, radius, limit := 44.0, 34.0, 500.0, 1
-
-	// Set with very short TTL
-	require.NoError(t, cache.SetNearbyDrivers(ctx, lat, lon, radius, limit, drivers, 100*time.Millisecond))
-
-	// Should exist immediately
-	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
-	require.NoError(t, err)
-	assert.Len(t, got, 1)
-
-	// Wait for expiration
 	time.Sleep(150 * time.Millisecond)
 
-	// Should be expired now
-	got, err = cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
+	got, err = cache.Get(ctx, driver.ID)
 	require.NoError(t, err)
-	assert.Nil(t, got) // Should return nil after expiration
+	assert.Nil(t, got)
 }
 
-// TestRedisDriverCache_GetNearbyDrivers_KeyGeneration tests different key generation scenarios
-// Expected: Should generate different keys for different parameters
-func TestRedisDriverCache_GetNearbyDrivers_KeyGeneration(t *testing.T) {
+// TestRedisDriverCache_MultipleDrivers tests cache operations with multiple drivers
+// Expected: Should handle multiple drivers independently in cache storage and retrieval
+func TestRedisDriverCache_MultipleDrivers(t *testing.T) {
 	cache, cleanup := setupRedisTestCache(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	drivers1 := []*domain.DriverWithDistance{
-		{Driver: domain.Driver{ID: "set1_driver"}, Distance: 100},
+	drivers := []*domain.Driver{
+		{ID: "driver_1", Location: domain.NewPoint(29.1, 41.1)},
+		{ID: "driver_2", Location: domain.NewPoint(29.2, 41.2)},
+		{ID: "driver_3", Location: domain.NewPoint(29.3, 41.3)},
 	}
-	drivers2 := []*domain.DriverWithDistance{
-		{Driver: domain.Driver{ID: "set2_driver"}, Distance: 200},
+
+	for _, driver := range drivers {
+		require.NoError(t, cache.Set(ctx, driver.ID, driver, time.Minute))
 	}
 
-	// Set data with different parameters (should generate different keys)
-	lat1, lon1, radius1, limit1 := 40.0, 30.0, 1000.0, 5
-	lat2, lon2, radius2, limit2 := 40.0, 30.0, 2000.0, 5
+	for _, expected := range drivers {
+		got, err := cache.Get(ctx, expected.ID)
+		require.NoError(t, err)
+		assert.Equal(t, expected.ID, got.ID)
+		assert.Equal(t, expected.Location.Longitude(), got.Location.Longitude())
+		assert.Equal(t, expected.Location.Latitude(), got.Location.Latitude())
+	}
 
-	require.NoError(t, cache.SetNearbyDrivers(ctx, lat1, lon1, radius1, limit1, drivers1, time.Minute))
-	require.NoError(t, cache.SetNearbyDrivers(ctx, lat2, lon2, radius2, limit2, drivers2, time.Minute))
+	for _, driver := range drivers {
+		require.NoError(t, cache.Delete(ctx, driver.ID))
+	}
 
-	// Should get different results for different keys
-	got1, err := cache.GetNearbyDrivers(ctx, lat1, lon1, radius1, limit1)
-	require.NoError(t, err)
-	assert.Equal(t, "set1_driver", got1[0].Driver.ID)
-
-	got2, err := cache.GetNearbyDrivers(ctx, lat2, lon2, radius2, limit2)
-	require.NoError(t, err)
-	assert.Equal(t, "set2_driver", got2[0].Driver.ID)
+	for _, driver := range drivers {
+		got, err := cache.Get(ctx, driver.ID)
+		require.NoError(t, err)
+		assert.Nil(t, got)
+	}
 }

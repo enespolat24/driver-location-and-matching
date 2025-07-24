@@ -51,14 +51,6 @@ func (m *mockCache) Delete(ctx context.Context, driverID string) error {
 	args := m.Called(ctx, driverID)
 	return args.Error(0)
 }
-func (m *mockCache) GetNearbyDrivers(ctx context.Context, lat, lon, radius float64, limit int) ([]*domain.DriverWithDistance, error) {
-	args := m.Called(ctx, lat, lon, radius, limit)
-	return args.Get(0).([]*domain.DriverWithDistance), args.Error(1)
-}
-func (m *mockCache) SetNearbyDrivers(ctx context.Context, lat, lon, radius float64, limit int, drivers []*domain.DriverWithDistance, ttl time.Duration) error {
-	args := m.Called(ctx, lat, lon, radius, limit, drivers, ttl)
-	return args.Error(0)
-}
 func (m *mockCache) IsHealthy(ctx context.Context) bool { return true }
 
 // TestCreateDriver_Success tests successful driver creation with valid request data
@@ -262,37 +254,19 @@ func TestGetDriver_CacheError(t *testing.T) {
 	cache.AssertExpectations(t)
 }
 
-// TestSearchNearbyDrivers_CacheHit tests nearby driver search when results are found in cache
-// Expected: Should return cached results without calling repository
-func TestSearchNearbyDrivers_CacheHit(t *testing.T) {
+// TestSearchNearbyDrivers_Success tests nearby driver search with successful repository call
+// Expected: Should fetch from repository and return drivers
+func TestSearchNearbyDrivers_Success(t *testing.T) {
 	repo := new(mockRepo)
 	cache := new(mockCache)
 	service := NewDriverApplicationService(repo, cache)
 	req := domain.SearchRequest{Location: domain.NewPoint(1, 2), Radius: 100, Limit: 5}
 	drivers := []*domain.DriverWithDistance{{Driver: domain.Driver{ID: "d1"}, Distance: 10}}
-	cache.On("GetNearbyDrivers", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(drivers, nil)
-	result, err := service.SearchNearbyDrivers(req)
-	assert.NoError(t, err)
-	assert.Equal(t, drivers, result)
-	cache.AssertExpectations(t)
-}
-
-// TestSearchNearbyDrivers_CacheMiss tests nearby driver search when results are not in cache
-// Expected: Should fetch from repository, cache the results, and return drivers
-func TestSearchNearbyDrivers_CacheMiss(t *testing.T) {
-	repo := new(mockRepo)
-	cache := new(mockCache)
-	service := NewDriverApplicationService(repo, cache)
-	req := domain.SearchRequest{Location: domain.NewPoint(1, 2), Radius: 100, Limit: 5}
-	drivers := []*domain.DriverWithDistance{{Driver: domain.Driver{ID: "d2"}, Distance: 20}}
-	cache.On("GetNearbyDrivers", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(([]*domain.DriverWithDistance)(nil), nil)
 	repo.On("SearchNearby", req.Location, req.Radius, req.Limit).Return(drivers, nil)
-	cache.On("SetNearbyDrivers", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, drivers, mock.Anything).Return(nil)
 	result, err := service.SearchNearbyDrivers(req)
 	assert.NoError(t, err)
 	assert.Equal(t, drivers, result)
 	repo.AssertExpectations(t)
-	cache.AssertExpectations(t)
 }
 
 // TestSearchNearbyDrivers_InvalidRequest tests nearby driver search with invalid request data
@@ -318,16 +292,13 @@ func TestSearchNearbyDrivers_DefaultLimit(t *testing.T) {
 	req := domain.SearchRequest{Location: domain.NewPoint(1, 2), Radius: 100, Limit: 0}
 	drivers := []*domain.DriverWithDistance{{Driver: domain.Driver{ID: "d1"}, Distance: 10}}
 
-	cache.On("GetNearbyDrivers", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(([]*domain.DriverWithDistance)(nil), nil)
 	repo.On("SearchNearby", req.Location, req.Radius, 10).Return(drivers, nil)
-	cache.On("SetNearbyDrivers", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, drivers, mock.Anything).Return(nil)
 
 	result, err := service.SearchNearbyDrivers(req)
 	assert.NoError(t, err)
 	assert.Equal(t, drivers, result)
 
 	repo.AssertExpectations(t)
-	cache.AssertExpectations(t)
 }
 
 // TestSearchNearbyDrivers_RepoError tests nearby driver search when repository operation fails
@@ -338,7 +309,6 @@ func TestSearchNearbyDrivers_RepoError(t *testing.T) {
 	service := NewDriverApplicationService(repo, cache)
 	req := domain.SearchRequest{Location: domain.NewPoint(1, 2), Radius: 100, Limit: 5}
 
-	cache.On("GetNearbyDrivers", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(([]*domain.DriverWithDistance)(nil), nil)
 	repo.On("SearchNearby", req.Location, req.Radius, req.Limit).Return(([]*domain.DriverWithDistance)(nil), errors.New("search error"))
 
 	result, err := service.SearchNearbyDrivers(req)
@@ -347,28 +317,6 @@ func TestSearchNearbyDrivers_RepoError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to search nearby drivers")
 
 	repo.AssertExpectations(t)
-	cache.AssertExpectations(t)
-}
-
-// TestSearchNearbyDrivers_CacheError tests nearby driver search when cache operations fail
-// Expected: Should continue operation and fallback to repository when cache fails
-func TestSearchNearbyDrivers_CacheError(t *testing.T) {
-	repo := new(mockRepo)
-	cache := new(mockCache)
-	service := NewDriverApplicationService(repo, cache)
-	req := domain.SearchRequest{Location: domain.NewPoint(1, 2), Radius: 100, Limit: 5}
-	drivers := []*domain.DriverWithDistance{{Driver: domain.Driver{ID: "d1"}, Distance: 10}}
-
-	cache.On("GetNearbyDrivers", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(([]*domain.DriverWithDistance)(nil), errors.New("cache error"))
-	repo.On("SearchNearby", req.Location, req.Radius, req.Limit).Return(drivers, nil)
-	cache.On("SetNearbyDrivers", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, drivers, mock.Anything).Return(errors.New("cache error"))
-
-	result, err := service.SearchNearbyDrivers(req)
-	assert.NoError(t, err)
-	assert.Equal(t, drivers, result)
-
-	repo.AssertExpectations(t)
-	cache.AssertExpectations(t)
 }
 
 // TestUpdateDriverLocation_Success tests successful driver location update

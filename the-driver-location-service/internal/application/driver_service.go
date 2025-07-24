@@ -23,7 +23,6 @@ var _ primary.DriverService = (*DriverApplicationService)(nil)
 
 const (
 	DriverCacheTTL = 1 * time.Minute
-	NearbyCacheTTL = 30 * time.Second
 )
 
 func NewDriverApplicationService(repo secondary.DriverRepository, cache secondary.DriverCache) *DriverApplicationService {
@@ -94,26 +93,9 @@ func (s *DriverApplicationService) SearchNearbyDrivers(req domain.SearchRequest)
 		limit = 10
 	}
 
-	ctx := context.Background()
-
-	if s.cache != nil {
-		cachedDrivers, err := s.cache.GetNearbyDrivers(ctx, req.Location.Latitude(), req.Location.Longitude(), req.Radius, limit)
-		if err != nil {
-			fmt.Printf("Warning: failed to get nearby drivers from cache: %v\n", err)
-		} else if cachedDrivers != nil {
-			return cachedDrivers, nil
-		}
-	}
-
 	drivers, err := s.repo.SearchNearby(req.Location, req.Radius, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search nearby drivers: %w", err)
-	}
-
-	if s.cache != nil {
-		if err := s.cache.SetNearbyDrivers(ctx, req.Location.Latitude(), req.Location.Longitude(), req.Radius, limit, drivers, NearbyCacheTTL); err != nil {
-			fmt.Printf("Warning: failed to cache nearby drivers: %v\n", err)
-		}
 	}
 
 	return drivers, nil

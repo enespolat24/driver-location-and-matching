@@ -93,41 +93,6 @@ func (c *RedisDriverCache) Delete(ctx context.Context, driverID string) error {
 	return nil
 }
 
-func (c *RedisDriverCache) GetNearbyDrivers(ctx context.Context, lat, lon, radius float64, limit int) ([]*domain.DriverWithDistance, error) {
-	key := c.generateNearbyKey(lat, lon, radius, limit)
-
-	data, err := c.client.Get(ctx, key).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to get nearby drivers from cache: %w", err)
-	}
-
-	var drivers []*domain.DriverWithDistance
-	if err := json.Unmarshal([]byte(data), &drivers); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal nearby drivers: %w", err)
-	}
-
-	return drivers, nil
-}
-
-func (c *RedisDriverCache) SetNearbyDrivers(ctx context.Context, lat, lon, radius float64, limit int, drivers []*domain.DriverWithDistance, ttl time.Duration) error {
-	key := c.generateNearbyKey(lat, lon, radius, limit)
-
-	data, err := json.Marshal(drivers)
-	if err != nil {
-		return fmt.Errorf("failed to marshal nearby drivers: %w", err)
-	}
-
-	err = c.client.Set(ctx, key, data, ttl).Err()
-	if err != nil {
-		return fmt.Errorf("failed to set nearby drivers in cache: %w", err)
-	}
-
-	return nil
-}
-
 func (c *RedisDriverCache) IsHealthy(ctx context.Context) bool {
 	_, err := c.client.Ping(ctx).Result()
 	return err == nil
@@ -135,8 +100,4 @@ func (c *RedisDriverCache) IsHealthy(ctx context.Context) bool {
 
 func (c *RedisDriverCache) generateDriverKey(driverID string) string {
 	return fmt.Sprintf("driver:%s", driverID)
-}
-
-func (c *RedisDriverCache) generateNearbyKey(lat, lon, radius float64, limit int) string {
-	return fmt.Sprintf("nearby:%.6f:%.6f:%.0f:%d", lat, lon, radius, limit)
 }
