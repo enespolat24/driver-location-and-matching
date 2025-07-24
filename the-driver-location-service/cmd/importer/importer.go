@@ -1,17 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
-
-	"the-driver-location-service/internal/adapter/config"
-	"the-driver-location-service/internal/adapter/db"
-	"the-driver-location-service/internal/application"
-	"the-driver-location-service/internal/domain"
 )
 
 const (
@@ -20,30 +18,22 @@ const (
 	NUM_WORKERS   = 4
 )
 
+var (
+	apiURL = "http://localhost:8087/api/v1/drivers/batch"
+	apiKey = getenvOrDefault("MATCHING_API_KEY", "changeme")
+)
+
+func getenvOrDefault(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
+
 func main() {
 	log.Println("Driver location importer started...")
 
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
-	}
-
-	driverRepo, err := db.NewMongoDriverRepository(cfg)
-	if err != nil {
-		log.Fatalf("Failed to initialize MongoDB repository: %v", err)
-	}
-
-	isEmpty, err := driverRepo.IsEmpty()
-	if err != nil {
-		log.Printf("Failed to check if collection is empty: %v", err)
-	} else if !isEmpty {
-		log.Println("Collection is not empty. Data already imported. Exiting...")
-		return
-	}
-
-	driverService := application.NewDriverApplicationService(driverRepo, nil)
-
-	if err := importDataConcurrent(driverService); err != nil {
+	if err := importDataConcurrent(); err != nil {
 		log.Fatalf("Import failed: %v", err)
 	}
 
@@ -52,7 +42,7 @@ func main() {
 
 // i implemented worker pool pattern to import data concurrently
 // because i was asked about it in the interview
-func importDataConcurrent(service *application.DriverApplicationService) error {
+func importDataConcurrent() error {
 	file, err := os.Open(CSV_FILE_PATH)
 	if err != nil {
 		return fmt.Errorf("failed to open CSV file: %v", err)
@@ -65,16 +55,16 @@ func importDataConcurrent(service *application.DriverApplicationService) error {
 		return fmt.Errorf("failed to read CSV header: %v", err)
 	}
 
-	batchCh := make(chan []domain.CreateDriverRequest)
+	batchCh := make(chan []CreateDriverRequest)
 	errCh := make(chan error, 100)
 	var wg sync.WaitGroup
 
 	for i := 0; i < NUM_WORKERS; i++ {
-		wg.Add(1) // go 1.25
+		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
 			for batch := range batchCh {
-				if err := processBatch(service, batch); err != nil {
+				if err := processBatchHTTP(batch); err != nil {
 					log.Printf("Worker %d: Error processing batch: %v", workerID, err)
 					errCh <- err
 				}
@@ -82,7 +72,7 @@ func importDataConcurrent(service *application.DriverApplicationService) error {
 		}(i)
 	}
 
-	var batch []domain.CreateDriverRequest
+	var batch []CreateDriverRequest
 	successCount := 0
 	errorCount := 0
 
@@ -132,21 +122,55 @@ func importDataConcurrent(service *application.DriverApplicationService) error {
 	return nil
 }
 
-func processBatch(service *application.DriverApplicationService, batch []domain.CreateDriverRequest) error {
-	batchReq := domain.BatchCreateRequest{Drivers: batch}
+type Point struct {
+	Type        string    `json:"type"`
+	Coordinates []float64 `json:"coordinates"`
+}
 
-	_, err := service.BatchCreateDrivers(batchReq)
+type CreateDriverRequest struct {
+	ID       string `json:"id,omitempty"`
+	Location Point  `json:"location"`
+}
+
+type BatchCreateRequest struct {
+	Drivers []CreateDriverRequest `json:"drivers"`
+}
+
+func processBatchHTTP(batch []CreateDriverRequest) error {
+	batchReq := BatchCreateRequest{Drivers: batch}
+	body, err := json.Marshal(batchReq)
 	if err != nil {
-		return fmt.Errorf("batch create failed: %w", err)
+		return fmt.Errorf("json marshal error: %w", err)
 	}
 
-	log.Printf("Successfully processed batch of %d drivers", len(batch))
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(body))
+	if err != nil {
+		return fmt.Errorf("http request create error: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if apiKey != "" {
+		req.Header.Set("X-API-KEY", apiKey)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("http request error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		var respBody bytes.Buffer
+		respBody.ReadFrom(resp.Body)
+		return fmt.Errorf("API error: %s", respBody.String())
+	}
+
+	log.Printf("Batch import success, count: %d", len(batch))
 	return nil
 }
 
-func parseDriverLocation(record []string) (domain.CreateDriverRequest, error) {
+func parseDriverLocation(record []string) (CreateDriverRequest, error) {
 	if len(record) < 2 {
-		return domain.CreateDriverRequest{}, fmt.Errorf("invalid record format: expected at least 2 fields (latitude,longitude), got %d", len(record))
+		return CreateDriverRequest{}, fmt.Errorf("invalid record format: expected at least 2 fields (latitude,longitude), got %d", len(record))
 	}
 
 	latitudeStr := record[0]
@@ -154,14 +178,17 @@ func parseDriverLocation(record []string) (domain.CreateDriverRequest, error) {
 
 	latitude, err := strconv.ParseFloat(latitudeStr, 64)
 	if err != nil {
-		return domain.CreateDriverRequest{}, fmt.Errorf("invalid latitude '%s': %w", latitudeStr, err)
+		return CreateDriverRequest{}, fmt.Errorf("invalid latitude '%s': %w", latitudeStr, err)
 	}
 	longitude, err := strconv.ParseFloat(longitudeStr, 64)
 	if err != nil {
-		return domain.CreateDriverRequest{}, fmt.Errorf("invalid longitude '%s': %w", longitudeStr, err)
+		return CreateDriverRequest{}, fmt.Errorf("invalid longitude '%s': %w", longitudeStr, err)
 	}
 
-	return domain.CreateDriverRequest{
-		Location: domain.NewPoint(longitude, latitude),
+	return CreateDriverRequest{
+		Location: Point{
+			Type:        "Point",
+			Coordinates: []float64{longitude, latitude},
+		},
 	}, nil
 }
