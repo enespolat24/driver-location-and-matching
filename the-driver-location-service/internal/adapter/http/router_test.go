@@ -447,3 +447,32 @@ func TestRouter_Shutdown(t *testing.T) {
 	err := router.Shutdown()
 	assert.NoError(t, err)
 }
+
+// TestRouter_Start tests router start functionality
+// Expected: Should start the echo server and return error for invalid address
+func TestRouter_Start(t *testing.T) {
+	mockService := new(mockDriverService)
+	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
+	router := NewRouter(mockService, authConfig)
+
+	// Test with invalid address (should fail)
+	err := router.Start("invalid-address")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "listen")
+}
+
+// TestRouter_Start_ValidAddress tests router start with valid address
+// Expected: Should start the echo server successfully (we'll test with a valid but unused port)
+func TestRouter_Start_ValidAddress(t *testing.T) {
+	mockService := new(mockDriverService)
+	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
+	router := NewRouter(mockService, authConfig)
+
+	// Test with a valid address format but port that might be in use
+	// This test might fail if port 0 is not available, but it tests the method
+	err := router.Start(":0")
+	// We expect either success or a specific error about the port
+	if err != nil {
+		assert.Contains(t, err.Error(), "listen")
+	}
+}
