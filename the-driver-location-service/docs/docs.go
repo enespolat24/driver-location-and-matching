@@ -40,7 +40,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/the-driver-location-service_internal_domain.CreateDriverRequest"
+                            "$ref": "#/definitions/domain.CreateDriverRequest"
                         }
                     }
                 ],
@@ -48,21 +48,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/the-driver-location-service_internal_domain.Driver"
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     }
                 }
@@ -93,7 +91,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/the-driver-location-service_internal_domain.BatchCreateRequest"
+                            "$ref": "#/definitions/domain.BatchCreateRequest"
                         }
                     }
                 ],
@@ -101,22 +99,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     }
                 }
@@ -147,7 +142,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/the-driver-location-service_internal_domain.SearchRequest"
+                            "$ref": "#/definitions/domain.SearchRequest"
                         }
                     }
                 ],
@@ -155,22 +150,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     }
                 }
@@ -204,21 +196,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/the-driver-location-service_internal_domain.Driver"
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     }
                 }
@@ -254,7 +244,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/the-driver-location-service_internal_domain.Driver"
+                            "$ref": "#/definitions/domain.Driver"
                         }
                     }
                 ],
@@ -262,21 +252,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/the-driver-location-service_internal_domain.Driver"
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     }
                 }
@@ -308,22 +296,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     }
                 }
@@ -361,7 +346,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/the-driver-location-service_internal_domain.Point"
+                            "$ref": "#/definitions/domain.Point"
                         }
                     }
                 ],
@@ -369,22 +354,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     }
                 }
@@ -407,8 +389,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.APIResponse"
                         }
                     }
                 }
@@ -416,7 +397,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "the-driver-location-service_internal_domain.BatchCreateRequest": {
+        "domain.BatchCreateRequest": {
             "type": "object",
             "required": [
                 "drivers"
@@ -426,12 +407,12 @@ const docTemplate = `{
                     "type": "array",
                     "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/the-driver-location-service_internal_domain.CreateDriverRequest"
+                        "$ref": "#/definitions/domain.CreateDriverRequest"
                     }
                 }
             }
         },
-        "the-driver-location-service_internal_domain.CreateDriverRequest": {
+        "domain.CreateDriverRequest": {
             "type": "object",
             "required": [
                 "location"
@@ -441,11 +422,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "$ref": "#/definitions/the-driver-location-service_internal_domain.Point"
+                    "$ref": "#/definitions/domain.Point"
                 }
             }
         },
-        "the-driver-location-service_internal_domain.Driver": {
+        "domain.Driver": {
             "type": "object",
             "required": [
                 "location"
@@ -458,14 +439,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "$ref": "#/definitions/the-driver-location-service_internal_domain.Point"
+                    "$ref": "#/definitions/domain.Point"
                 },
                 "updated_at": {
                     "type": "string"
                 }
             }
         },
-        "the-driver-location-service_internal_domain.Point": {
+        "domain.Point": {
             "type": "object",
             "required": [
                 "coordinates",
@@ -483,7 +464,7 @@ const docTemplate = `{
                 }
             }
         },
-        "the-driver-location-service_internal_domain.SearchRequest": {
+        "domain.SearchRequest": {
             "type": "object",
             "required": [
                 "location",
@@ -495,11 +476,26 @@ const docTemplate = `{
                     "minimum": 0
                 },
                 "location": {
-                    "$ref": "#/definitions/the-driver-location-service_internal_domain.Point"
+                    "$ref": "#/definitions/domain.Point"
                 },
                 "radius": {
                     "description": "radius in meters",
                     "type": "number"
+                }
+            }
+        },
+        "http.APIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         }

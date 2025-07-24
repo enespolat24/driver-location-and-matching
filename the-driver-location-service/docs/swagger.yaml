@@ -1,37 +1,37 @@
 definitions:
-  the-driver-location-service_internal_domain.BatchCreateRequest:
+  domain.BatchCreateRequest:
     properties:
       drivers:
         items:
-          $ref: '#/definitions/the-driver-location-service_internal_domain.CreateDriverRequest'
+          $ref: '#/definitions/domain.CreateDriverRequest'
         minItems: 1
         type: array
     required:
     - drivers
     type: object
-  the-driver-location-service_internal_domain.CreateDriverRequest:
+  domain.CreateDriverRequest:
     properties:
       id:
         type: string
       location:
-        $ref: '#/definitions/the-driver-location-service_internal_domain.Point'
+        $ref: '#/definitions/domain.Point'
     required:
     - location
     type: object
-  the-driver-location-service_internal_domain.Driver:
+  domain.Driver:
     properties:
       created_at:
         type: string
       id:
         type: string
       location:
-        $ref: '#/definitions/the-driver-location-service_internal_domain.Point'
+        $ref: '#/definitions/domain.Point'
       updated_at:
         type: string
     required:
     - location
     type: object
-  the-driver-location-service_internal_domain.Point:
+  domain.Point:
     properties:
       coordinates:
         items:
@@ -43,19 +43,29 @@ definitions:
     - coordinates
     - type
     type: object
-  the-driver-location-service_internal_domain.SearchRequest:
+  domain.SearchRequest:
     properties:
       limit:
         minimum: 0
         type: integer
       location:
-        $ref: '#/definitions/the-driver-location-service_internal_domain.Point'
+        $ref: '#/definitions/domain.Point'
       radius:
         description: radius in meters
         type: number
     required:
     - location
     - radius
+    type: object
+  http.APIResponse:
+    properties:
+      data: {}
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
     type: object
 info:
   contact: {}
@@ -74,24 +84,22 @@ paths:
         name: driver
         required: true
         schema:
-          $ref: '#/definitions/the-driver-location-service_internal_domain.CreateDriverRequest'
+          $ref: '#/definitions/domain.CreateDriverRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/the-driver-location-service_internal_domain.Driver'
+            $ref: '#/definitions/http.APIResponse'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
       security:
       - X-API-KEY: []
       summary: Create a driver
@@ -112,18 +120,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
       security:
       - X-API-KEY: []
       summary: Delete driver by ID
@@ -143,17 +148,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/the-driver-location-service_internal_domain.Driver'
+            $ref: '#/definitions/http.APIResponse'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
       security:
       - X-API-KEY: []
       summary: Get driver by ID
@@ -174,24 +177,22 @@ paths:
         name: driver
         required: true
         schema:
-          $ref: '#/definitions/the-driver-location-service_internal_domain.Driver'
+          $ref: '#/definitions/domain.Driver'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/the-driver-location-service_internal_domain.Driver'
+            $ref: '#/definitions/http.APIResponse'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
       security:
       - X-API-KEY: []
       summary: Update driver by ID
@@ -213,25 +214,22 @@ paths:
         name: location
         required: true
         schema:
-          $ref: '#/definitions/the-driver-location-service_internal_domain.Point'
+          $ref: '#/definitions/domain.Point'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
       security:
       - X-API-KEY: []
       summary: Update driver location
@@ -248,25 +246,22 @@ paths:
         name: batch
         required: true
         schema:
-          $ref: '#/definitions/the-driver-location-service_internal_domain.BatchCreateRequest'
+          $ref: '#/definitions/domain.BatchCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
       security:
       - X-API-KEY: []
       summary: Batch create drivers
@@ -283,25 +278,22 @@ paths:
         name: search
         required: true
         schema:
-          $ref: '#/definitions/the-driver-location-service_internal_domain.SearchRequest'
+          $ref: '#/definitions/domain.SearchRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
       security:
       - X-API-KEY: []
       summary: Search nearby drivers
@@ -318,8 +310,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/http.APIResponse'
       summary: Health check endpoint
       tags:
       - health

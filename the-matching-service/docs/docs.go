@@ -40,7 +40,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/the-matching-service_internal_domain.MatchRequest"
+                            "$ref": "#/definitions/domain.MatchRequest"
                         }
                     }
                 ],
@@ -48,7 +48,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/the-matching-service_internal_domain.MatchResponse"
+                            "$ref": "#/definitions/domain.MatchResponse"
                         }
                     },
                     "400": {
@@ -108,7 +108,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "the-matching-service_internal_domain.Location": {
+        "domain.Location": {
             "description": "GeoJSON Point location with longitude and latitude coordinates",
             "type": "object",
             "required": [
@@ -132,7 +132,7 @@ const docTemplate = `{
                 }
             }
         },
-        "the-matching-service_internal_domain.MatchRequest": {
+        "domain.MatchRequest": {
             "description": "Request to find a nearby driver for a rider",
             "type": "object",
             "required": [
@@ -143,7 +143,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "location": {
-                    "$ref": "#/definitions/the-matching-service_internal_domain.Location"
+                    "$ref": "#/definitions/domain.Location"
                 },
                 "name": {
                     "type": "string",
@@ -163,7 +163,7 @@ const docTemplate = `{
                 }
             }
         },
-        "the-matching-service_internal_domain.MatchResponse": {
+        "domain.MatchResponse": {
             "description": "Response containing matched driver information",
             "type": "object",
             "properties": {
