@@ -13,28 +13,21 @@ func TestNewRider(t *testing.T) {
 		Coordinates: [2]float64{28.9, 41.0},
 	}
 
-	rider := NewRider("user-123", "Enes", "Polat", location)
+	rider := NewRider("user-123", location)
 
 	assert.Equal(t, "user-123", rider.ID)
-	assert.Equal(t, "Enes", rider.Name)
-	assert.Equal(t, "Polat", rider.Surname)
 	assert.Equal(t, location, rider.Location)
 }
 
 func TestRider_JSONTags(t *testing.T) {
 	rider := &Rider{
 		ID:       "user-123",
-		Name:     "Enes",
-		Surname:  "Polat",
 		Location: Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}},
 	}
 
-	// Test that struct can be marshaled to JSON
 	data, err := json.Marshal(rider)
 	assert.NoError(t, err)
 	assert.Contains(t, string(data), "user-123")
-	assert.Contains(t, string(data), "Enes")
-	assert.Contains(t, string(data), "Polat")
 }
 
 func TestLocation_JSONTags(t *testing.T) {
@@ -43,7 +36,6 @@ func TestLocation_JSONTags(t *testing.T) {
 		Coordinates: [2]float64{28.9, 41.0},
 	}
 
-	// Test that struct can be marshaled to JSON
 	data, err := json.Marshal(location)
 	assert.NoError(t, err)
 	assert.Contains(t, string(data), "Point")
@@ -69,7 +61,6 @@ func TestDriver_JSONTags(t *testing.T) {
 		UpdatedAt: "2023-01-01T00:00:00Z",
 	}
 
-	// Test that struct can be marshaled to JSON
 	data, err := json.Marshal(driver)
 	assert.NoError(t, err)
 	assert.Contains(t, string(data), "driver-123")
@@ -82,7 +73,6 @@ func TestDriverWithDistance_JSONTags(t *testing.T) {
 		Distance: 150.5,
 	}
 
-	// Test that struct can be marshaled to JSON
 	data, err := json.Marshal(driverWithDistance)
 	assert.NoError(t, err)
 	assert.Contains(t, string(data), "driver-123")
@@ -96,7 +86,6 @@ func TestMatchResult_JSONTags(t *testing.T) {
 		Distance: 200.5,
 	}
 
-	// Test that struct can be marshaled to JSON
 	data, err := json.Marshal(matchResult)
 	assert.NoError(t, err)
 	assert.Contains(t, string(data), "rider-123")
@@ -171,16 +160,12 @@ func TestRider_Equality(t *testing.T) {
 	location1 := Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}}
 	location2 := Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}}
 
-	rider1 := NewRider("user-123", "Enes", "Polat", location1)
-	rider2 := NewRider("user-123", "Enes", "Polat", location2)
-	rider3 := NewRider("user-456", "Enes", "Polat", location1)
+	rider1 := NewRider("user-123", location1)
+	rider2 := NewRider("user-123", location2)
+	rider3 := NewRider("user-456", location1)
 
-	// Same ID, name, surname, and location should be equal
 	assert.Equal(t, rider1.ID, rider2.ID)
-	assert.Equal(t, rider1.Name, rider2.Name)
-	assert.Equal(t, rider1.Surname, rider2.Surname)
 	assert.Equal(t, rider1.Location, rider2.Location)
 
-	// Different ID should be different
 	assert.NotEqual(t, rider1.ID, rider3.ID)
 }

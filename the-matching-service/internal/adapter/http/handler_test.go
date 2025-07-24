@@ -64,8 +64,6 @@ func TestMatchHandler_Success(t *testing.T) {
 	token := generateJWT(cfg.JWTSecret, claims)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
-		"name": "Enes",
-		"surname": "Polat",
 		"location": {"type": "Point", "coordinates": [28.9, 41.0]},
 		"radius": 500
 	}`))
@@ -98,8 +96,6 @@ func TestMatchHandler_ValidationError(t *testing.T) {
 
 	// Test with invalid request (missing required fields)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
-		"name": "",
-		"surname": "P",
 		"location": {"type": "Invalid", "coordinates": [181.0, 91.0]},
 		"radius": -10
 	}`))
@@ -128,8 +124,6 @@ func TestMatchHandler_Unauthorized(t *testing.T) {
 
 	// Request without authentication token
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
-		"name": "Enes",
-		"surname": "Polat",
 		"location": {"type": "Point", "coordinates": [28.9, 41.0]},
 		"radius": 500
 	}`))
@@ -159,8 +153,6 @@ func TestMatchHandler_InvalidRequestBody(t *testing.T) {
 
 	// Invalid JSON request body
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
-		"name": "Enes",
-		"surname": "Polat",
 		"location": {"type": "Point", "coordinates": [28.9, 41.0]},
 		"radius": 500,
 	`)) // Missing closing brace
@@ -192,8 +184,6 @@ func TestMatchHandler_InternalServerError(t *testing.T) {
 	token := generateJWT(cfg.JWTSecret, claims)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
-		"name": "Enes",
-		"surname": "Polat",
 		"location": {"type": "Point", "coordinates": [28.9, 41.0]},
 		"radius": 500
 	}`))
@@ -225,8 +215,6 @@ func TestMatchHandler_NoDriversFound(t *testing.T) {
 	token := generateJWT(cfg.JWTSecret, claims)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{
-		"name": "Enes",
-		"surname": "Polat",
 		"location": {"type": "Point", "coordinates": [28.9, 41.0]},
 		"radius": 500
 	}`))
@@ -286,8 +274,6 @@ func TestMatchHandler_GeoJSONPointSearch_NoDriversFound(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			reqBody := fmt.Sprintf(`{
-				"name": "Test",
-				"surname": "User",
 				"location": {"type": "Point", "coordinates": [%f, %f]},
 				"radius": %f
 			}`, tc.coordinates[0], tc.coordinates[1], tc.radius)
@@ -346,8 +332,6 @@ func TestMatchHandler_GeoJSONPointSearch_Success(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			reqBody := fmt.Sprintf(`{
-				"name": "Test",
-				"surname": "User",
 				"location": {"type": "Point", "coordinates": [%f, %f]},
 				"radius": %f
 			}`, tc.coordinates[0], tc.coordinates[1], tc.radius)

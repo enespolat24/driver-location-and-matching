@@ -9,9 +9,7 @@ type Location struct {
 
 type Rider struct {
 	ID       string   `json:"id"`
-	Name     string   `json:"name"`
-	Surname  string   `json:"surname"`
-	Location Location `json:"location"`
+	Location Location `json:"location" validate:"required"`
 }
 
 // NewRider creates a new Rider with the given ID, name and location
@@ -21,11 +19,9 @@ type Rider struct {
 // since we are in microservices architecture we have our seperate
 // auth service and i presume this token is created by that service
 // also we can name id as user_id alternatively but i assume rider is the user
-func NewRider(ID, name, surname string, location Location) *Rider {
+func NewRider(ID string, location Location) *Rider {
 	return &Rider{
 		ID:       ID,
-		Name:     name,
-		Surname:  surname,
 		Location: location,
 	}
 }

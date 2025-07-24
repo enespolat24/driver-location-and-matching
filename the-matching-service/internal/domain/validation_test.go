@@ -10,8 +10,6 @@ import (
 // Expected: No validation errors should be returned
 func TestValidateStruct_Success(t *testing.T) {
 	req := &MatchRequest{
-		Name:     "Enes",
-		Surname:  "Polat",
 		Location: Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}},
 		Radius:   500.0,
 	}
@@ -20,38 +18,34 @@ func TestValidateStruct_Success(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TestValidateStruct_MissingRequiredFields tests validation when required fields are empty
-// Expected: Validation should fail with error for empty Name field
+// TestValidateStruct_MissingRequiredFields tests validation when required fields are missing
+// Expected: Validation should fail with error for missing required fields
 func TestValidateStruct_MissingRequiredFields(t *testing.T) {
+	// Test with missing Radius
 	req := &MatchRequest{
-		Name:     "",
-		Surname:  "Polat",
 		Location: Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}},
-		Radius:   500.0,
 	}
 
 	err := ValidateStruct(req)
-	assert.Error(t, err, "Should fail for missing required field")
+	assert.Error(t, err, "Should fail for missing required Radius field")
 
 	validationErrors, ok := err.(*ValidationErrors)
 	assert.True(t, ok)
 
-	foundNameError := false
+	foundRadiusError := false
 	for _, validationError := range validationErrors.Errors {
-		if validationError.Field == "Name" {
-			foundNameError = true
+		if validationError.Field == "Radius" {
+			foundRadiusError = true
 			break
 		}
 	}
-	assert.True(t, foundNameError, "Name field should have validation error for empty string")
+	assert.True(t, foundRadiusError, "Radius field should have validation error when missing")
 }
 
 // TestValidateStruct_InvalidLocationType tests validation when location type is not "Point"
 // Expected: Validation should fail with error for invalid Type field (must be "Point")
 func TestValidateStruct_InvalidLocationType(t *testing.T) {
 	req := &MatchRequest{
-		Name:     "Enes",
-		Surname:  "Polat",
 		Location: Location{Type: "Polygon", Coordinates: [2]float64{28.9, 41.0}},
 		Radius:   500.0,
 	}
@@ -100,8 +94,6 @@ func TestValidateStruct_InvalidCoordinates_GeoJSONSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := &MatchRequest{
-				Name:     "Enes",
-				Surname:  "Polat",
 				Location: Location{Type: "Point", Coordinates: tt.coordinates},
 				Radius:   500.0,
 			}
@@ -147,8 +139,6 @@ func TestValidateStruct_ValidCoordinates_GeoJSONSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := &MatchRequest{
-				Name:     "Enes",
-				Surname:  "Polat",
 				Location: Location{Type: "Point", Coordinates: tt.coordinates},
 				Radius:   500.0,
 			}
@@ -192,8 +182,6 @@ func TestValidateStruct_InvalidRadius(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := &MatchRequest{
-				Name:     "Enes",
-				Surname:  "Polat",
 				Location: Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}},
 				Radius:   tt.radius,
 			}
@@ -254,8 +242,6 @@ func TestValidateStruct_ValidRadius(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := &MatchRequest{
-				Name:     "Enes",
-				Surname:  "Polat",
 				Location: Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}},
 				Radius:   tt.radius,
 			}
@@ -270,8 +256,6 @@ func TestValidateStruct_ValidRadius(t *testing.T) {
 // Expected: Validation should return multiple errors for different invalid fields
 func TestValidateStruct_MultipleErrors(t *testing.T) {
 	req := &MatchRequest{
-		Name:     "",
-		Surname:  "",
 		Location: Location{Type: "Invalid", Coordinates: [2]float64{181.0, 91.0}},
 		Radius:   -10.0,
 	}
@@ -300,6 +284,25 @@ func TestValidateStruct_MultipleErrors(t *testing.T) {
 
 	assert.True(t, foundTypeError, "Should have Type validation error")
 	assert.True(t, foundCoordinatesError, "Should have Coordinates validation error")
+}
+
+// TestValidateStruct_MissingAllRequiredFields tests validation when all required fields are missing
+// Expected: Validation should fail with error for Radius field (Location is struct, so not nil)
+func TestValidateStruct_MissingAllRequiredFields(t *testing.T) {
+	req := &MatchRequest{}
+	err := ValidateStruct(req)
+	assert.Error(t, err, "Should fail for missing required fields")
+
+	validationErrors, ok := err.(*ValidationErrors)
+	assert.True(t, ok)
+
+	foundRadius := false
+	for _, ve := range validationErrors.Errors {
+		if ve.Field == "Radius" {
+			foundRadius = true
+		}
+	}
+	assert.True(t, foundRadius, "Radius field should have validation error when missing")
 }
 
 // TestValidationErrors_Error tests the Error() method of ValidationErrors struct
@@ -353,8 +356,6 @@ func TestCustomValidator_Radius(t *testing.T) {
 
 	// Test valid radius
 	req := &MatchRequest{
-		Name:     "Test",
-		Surname:  "User",
 		Location: Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}},
 		Radius:   500.0,
 	}

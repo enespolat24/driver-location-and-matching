@@ -9,8 +9,6 @@ import (
 
 func TestMatchRequest_CreateRider(t *testing.T) {
 	req := &MatchRequest{
-		Name:     "Enes",
-		Surname:  "Polat",
 		Location: Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}},
 		Radius:   500,
 	}
@@ -19,8 +17,6 @@ func TestMatchRequest_CreateRider(t *testing.T) {
 	rider := req.CreateRider(userID)
 
 	assert.Equal(t, userID, rider.ID)
-	assert.Equal(t, req.Name, rider.Name)
-	assert.Equal(t, req.Surname, rider.Surname)
 	assert.Equal(t, req.Location, rider.Location)
 }
 
@@ -40,8 +36,6 @@ func TestNewMatchResponse(t *testing.T) {
 
 func TestMatchRequest_JSONTags(t *testing.T) {
 	req := &MatchRequest{
-		Name:     "Test",
-		Surname:  "User",
 		Location: Location{Type: "Point", Coordinates: [2]float64{0, 0}},
 		Radius:   100,
 	}

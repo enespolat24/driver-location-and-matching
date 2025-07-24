@@ -33,7 +33,7 @@ func TestMatchingService_MatchRiderToDriver_success(t *testing.T) {
 	}
 
 	service := NewMatchingService(mockSvc)
-	rider := domain.Rider{ID: "rider-1", Name: "Ali", Location: domain.Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}}}
+	rider := domain.Rider{ID: "rider-1", Location: domain.Location{Type: "Point", Coordinates: [2]float64{28.9, 41.0}}}
 	result, err := service.MatchRiderToDriver(context.Background(), rider, 500)
 
 	assert.NoError(t, err)
@@ -53,7 +53,7 @@ func TestMatchingService_MatchRiderToDriver_noDrivers(t *testing.T) {
 	}
 
 	service := NewMatchingService(mockSvc)
-	rider := domain.Rider{ID: "rider-2", Name: "Veli", Location: domain.Location{Type: "Point", Coordinates: [2]float64{29.0, 41.1}}}
+	rider := domain.Rider{ID: "rider-2", Location: domain.Location{Type: "Point", Coordinates: [2]float64{29.0, 41.1}}}
 	result, err := service.MatchRiderToDriver(context.Background(), rider, 500)
 
 	assert.Error(t, err)
@@ -71,7 +71,7 @@ func TestMatchingService_MatchRiderToDriver_serviceError(t *testing.T) {
 	}
 
 	service := NewMatchingService(mockSvc)
-	rider := domain.Rider{ID: "rider-3", Name: "Ayşe", Location: domain.Location{Type: "Point", Coordinates: [2]float64{29.1, 41.2}}}
+	rider := domain.Rider{ID: "rider-3", Location: domain.Location{Type: "Point", Coordinates: [2]float64{29.1, 41.2}}}
 	result, err := service.MatchRiderToDriver(context.Background(), rider, 500)
 
 	assert.Error(t, err)
