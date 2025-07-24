@@ -59,51 +59,39 @@ func (h *DriverHandler) HealthCheck(c echo.Context) error {
 	return h.successResponse(c, http.StatusOK, data, "Service is healthy")
 }
 
-// @Summary Create a driver
-// @Description Create a new driver with location
+// @Summary Create driver(s)
+// @Description Create one or multiple drivers in a single request. Supports both single driver and batch operations.
 // @Tags drivers
 // @Accept json
 // @Produce json
-// @Param driver body domain.CreateDriverRequest true "Driver info"
+// @Param drivers body []domain.CreateDriverRequest true "Driver(s) info - send array with single element for one driver, multiple elements for batch"
 // @Success 201 {object} APIResponse
 // @Failure 400 {object} APIResponse
 // @Failure 500 {object} APIResponse
 // @Security X-API-KEY
 // @Router /api/v1/drivers [post]
-func (h *DriverHandler) CreateDriver(c echo.Context) error {
-	var req domain.CreateDriverRequest
+func (h *DriverHandler) CreateDrivers(c echo.Context) error {
+	var req []domain.CreateDriverRequest
 	if err := c.Bind(&req); err != nil {
-		return h.errorResponse(c, http.StatusBadRequest, "invalid_request", "Invalid request body")
+		return h.errorResponse(c, http.StatusBadRequest, "invalid_request", "Invalid request body - expected array of driver requests")
 	}
 
-	driver, err := h.driverService.CreateDriver(req)
+	if len(req) == 0 {
+		return h.errorResponse(c, http.StatusBadRequest, "invalid_request", "At least one driver is required")
+	}
+
+	batchReq := domain.BatchCreateRequest{Drivers: req}
+	drivers, err := h.driverService.BatchCreateDrivers(batchReq)
 	if err != nil {
 		return h.errorResponse(c, http.StatusInternalServerError, "internal_error", err.Error())
 	}
 
-	return h.successResponse(c, http.StatusCreated, driver, "Driver created successfully")
-}
-
-// @Summary Batch create drivers
-// @Description Create multiple drivers in a single request
-// @Tags drivers
-// @Accept json
-// @Produce json
-// @Param batch body domain.BatchCreateRequest true "Batch driver info"
-// @Success 201 {object} APIResponse
-// @Failure 400 {object} APIResponse
-// @Failure 500 {object} APIResponse
-// @Security X-API-KEY
-// @Router /api/v1/drivers/batch [post]
-func (h *DriverHandler) BatchCreateDrivers(c echo.Context) error {
-	var req domain.BatchCreateRequest
-	if err := c.Bind(&req); err != nil {
-		return h.errorResponse(c, http.StatusBadRequest, "invalid_request", "Invalid request body")
-	}
-
-	drivers, err := h.driverService.BatchCreateDrivers(req)
-	if err != nil {
-		return h.errorResponse(c, http.StatusInternalServerError, "internal_error", err.Error())
+	if len(drivers) == 1 {
+		data := map[string]interface{}{
+			"driver": drivers[0],
+			"count":  1,
+		}
+		return h.successResponse(c, http.StatusCreated, data, "Driver created successfully")
 	}
 
 	data := map[string]interface{}{

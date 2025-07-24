@@ -51,8 +51,7 @@ func (r *Router) setupRoutes() {
 	drivers := v1.Group("/drivers")
 	drivers.Use(middleware.APIKeyAuthMiddleware(r.config))
 	{
-		drivers.POST("", r.handler.CreateDriver)                       // Create single driver
-		drivers.POST("/batch", r.handler.BatchCreateDrivers)           // Batch create drivers
+		drivers.POST("", r.handler.CreateDrivers)                      // Create driver(s) - supports both single and batch
 		drivers.POST("/search", r.handler.SearchNearbyDrivers)         // Search nearby drivers
 		drivers.GET("/:id", r.handler.GetDriver)                       // Get driver by ID
 		drivers.PUT("/:id", r.handler.UpdateDriver)                    // Update driver by ID

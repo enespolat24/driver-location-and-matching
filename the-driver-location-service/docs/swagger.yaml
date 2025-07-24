@@ -1,14 +1,4 @@
 definitions:
-  domain.BatchCreateRequest:
-    properties:
-      drivers:
-        items:
-          $ref: '#/definitions/domain.CreateDriverRequest'
-        minItems: 1
-        type: array
-    required:
-    - drivers
-    type: object
   domain.CreateDriverRequest:
     properties:
       id:
@@ -77,14 +67,18 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new driver with location
+      description: Create one or multiple drivers in a single request. Supports both
+        single driver and batch operations.
       parameters:
-      - description: Driver info
+      - description: Driver(s) info - send array with single element for one driver,
+          multiple elements for batch
         in: body
-        name: driver
+        name: drivers
         required: true
         schema:
-          $ref: '#/definitions/domain.CreateDriverRequest'
+          items:
+            $ref: '#/definitions/domain.CreateDriverRequest'
+          type: array
       produces:
       - application/json
       responses:
@@ -102,7 +96,7 @@ paths:
             $ref: '#/definitions/http.APIResponse'
       security:
       - X-API-KEY: []
-      summary: Create a driver
+      summary: Create driver(s)
       tags:
       - drivers
   /api/v1/drivers/{id}:
@@ -233,38 +227,6 @@ paths:
       security:
       - X-API-KEY: []
       summary: Update driver location
-      tags:
-      - drivers
-  /api/v1/drivers/batch:
-    post:
-      consumes:
-      - application/json
-      description: Create multiple drivers in a single request
-      parameters:
-      - description: Batch driver info
-        in: body
-        name: batch
-        required: true
-        schema:
-          $ref: '#/definitions/domain.BatchCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/http.APIResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/http.APIResponse'
-      security:
-      - X-API-KEY: []
-      summary: Batch create drivers
       tags:
       - drivers
   /api/v1/drivers/search:

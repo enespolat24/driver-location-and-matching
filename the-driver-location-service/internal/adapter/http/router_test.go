@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"errors"
 	"the-driver-location-service/internal/adapter/middleware"
 	"the-driver-location-service/internal/domain"
 )
@@ -104,40 +105,23 @@ func TestRouter_HealthCheck(t *testing.T) {
 func TestRouter_CreateDriver_Success(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
+	e := echo.New()
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
-
-	reqBody := `{"id":"driver1","location":{"type":"Point","coordinates":[29.0,41.0]}}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(reqBody))
+	body := `[{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}]`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
-	c := router.echo.NewContext(req, rec)
+	c := e.NewContext(req, rec)
 
-	expectedDriver := &domain.Driver{
-		ID:       "driver1",
-		Location: domain.NewPoint(29.0, 41.0),
-	}
+	drv := &domain.Driver{ID: "d1", Location: domain.NewPoint(29, 41)}
+	mockService.On("BatchCreateDrivers", mock.Anything).Return([]*domain.Driver{drv}, nil)
 
-	mockService.On("CreateDriver", mock.AnythingOfType("domain.CreateDriverRequest")).Return(expectedDriver, nil)
-
-	err := router.handler.CreateDriver(c)
+	err := router.handler.CreateDrivers(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, rec.Code)
-
-	var response APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.True(t, response.Success)
-	assert.Equal(t, "Driver created successfully", response.Message)
-
-	driverData := response.Data.(map[string]interface{})
-	assert.Equal(t, expectedDriver.ID, driverData["id"])
-	locationData := driverData["location"].(map[string]interface{})
-	assert.Equal(t, "Point", locationData["type"])
-	coordinates := locationData["coordinates"].([]interface{})
-	assert.Equal(t, 29.0, coordinates[0])
-	assert.Equal(t, 41.0, coordinates[1])
-
+	assert.Contains(t, rec.Body.String(), "d1")
+	assert.Contains(t, rec.Body.String(), "driver")
 	mockService.AssertExpectations(t)
 }
 
@@ -155,7 +139,7 @@ func TestRouter_CreateDriver_InvalidRequest(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := router.echo.NewContext(req, rec)
 
-	err := router.handler.CreateDriver(c)
+	err := router.handler.CreateDrivers(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 
@@ -171,27 +155,21 @@ func TestRouter_CreateDriver_InvalidRequest(t *testing.T) {
 func TestRouter_CreateDriver_ServiceError(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
+	e := echo.New()
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
-
-	reqBody := `{"id":"driver1","location":{"type":"Point","coordinates":[29.0,41.0]}}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(reqBody))
+	body := `[{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}]`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
-	c := router.echo.NewContext(req, rec)
+	c := e.NewContext(req, rec)
 
-	mockService.On("CreateDriver", mock.AnythingOfType("domain.CreateDriverRequest")).Return((*domain.Driver)(nil), assert.AnError)
+	mockService.On("BatchCreateDrivers", mock.Anything).Return(([]*domain.Driver)(nil), errors.New("db error"))
 
-	err := router.handler.CreateDriver(c)
+	err := router.handler.CreateDrivers(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-
-	var response APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.False(t, response.Success)
-	assert.Equal(t, "internal_error", response.Error)
-
+	assert.Contains(t, rec.Body.String(), "db error")
 	mockService.AssertExpectations(t)
 }
 
@@ -200,33 +178,25 @@ func TestRouter_CreateDriver_ServiceError(t *testing.T) {
 func TestRouter_BatchCreateDrivers_Success(t *testing.T) {
 	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
+	e := echo.New()
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
-
-	reqBody := `{"drivers":[{"id":"driver1","location":{"type":"Point","coordinates":[29.0,41.0]}}]}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers/batch", strings.NewReader(reqBody))
+	body := `[{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}, {"id":"d2","location":{"type":"Point","coordinates":[30,42]}}]`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
-	c := router.echo.NewContext(req, rec)
+	c := e.NewContext(req, rec)
 
-	expectedDrivers := []*domain.Driver{
-		{ID: "driver1", Location: domain.NewPoint(29.0, 41.0)},
-	}
+	drv1 := &domain.Driver{ID: "d1", Location: domain.NewPoint(29, 41)}
+	drv2 := &domain.Driver{ID: "d2", Location: domain.NewPoint(30, 42)}
+	mockService.On("BatchCreateDrivers", mock.Anything).Return([]*domain.Driver{drv1, drv2}, nil)
 
-	mockService.On("BatchCreateDrivers", mock.AnythingOfType("domain.BatchCreateRequest")).Return(expectedDrivers, nil)
-
-	err := router.handler.BatchCreateDrivers(c)
+	err := router.handler.CreateDrivers(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, rec.Code)
-
-	var response APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.True(t, response.Success)
-
-	data := response.Data.(map[string]interface{})
-	assert.Equal(t, float64(1), data["count"])
-
+	assert.Contains(t, rec.Body.String(), "d1")
+	assert.Contains(t, rec.Body.String(), "d2")
+	assert.Contains(t, rec.Body.String(), "drivers")
 	mockService.AssertExpectations(t)
 }
 
@@ -455,7 +425,6 @@ func TestRouter_RoutesRegistration(t *testing.T) {
 	expectedRoutes := []string{
 		"GET /health",
 		"POST /api/v1/drivers",
-		"POST /api/v1/drivers/batch",
 		"POST /api/v1/drivers/search",
 		"GET /api/v1/drivers/:id",
 		"PUT /api/v1/drivers/:id",

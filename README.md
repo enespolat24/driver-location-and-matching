@@ -22,7 +22,7 @@ API documentation is provided via OpenAPI, and unit/integration tests validate f
 
 | Service | Coverage |
 |---------|----------|
-| **Driver Location Service** | 74.0%|
+| **Driver Location Service** | 73.8%|
 | **Matching Service** | 82.4%  |
 
 ## Project Diagram
@@ -171,6 +171,44 @@ The matching service requires JWT authentication. You can use the following toke
   "authenticated": true,
   "user_id": "81539ac0-8418-4c9c-a426-3fbbf9e2ee6e"
 }
+```
+
+##  Driver Create Endpoint
+
+> **Note:** 
+> - To create a single driver, send a JSON array with one object.
+> - To create multiple drivers, send a JSON array with multiple objects.
+
+#### Single Driver Example
+```json
+POST /api/v1/drivers
+[
+  {
+    "location": {
+      "type": "Point",
+      "coordinates": [29.0, 41.0]
+    }
+  }
+]
+```
+
+#### Batch Driver Example
+```json
+POST /api/v1/drivers
+[
+  {
+    "location": {
+      "type": "Point",
+      "coordinates": [29.0, 41.0]
+    }
+  },
+  {
+    "location": {
+      "type": "Point",
+      "coordinates": [30.0, 42.0]
+    }
+  }
+]
 ```
 
 ---

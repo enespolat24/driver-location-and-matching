@@ -45,27 +45,54 @@ func (m *MockDriverService) DeleteDriver(id string) error {
 	return args.Error(0)
 }
 
-func TestCreateDriver_Success(t *testing.T) {
+// Tekli driver creation
+func TestCreateDrivers_SingleDriver_Success(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
 	e := echo.New()
-	body := `{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}`
+	body := `[{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}]`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
 	drv := &domain.Driver{ID: "d1", Location: domain.NewPoint(29, 41)}
-	mockService.On("CreateDriver", mock.Anything).Return(drv, nil)
+	mockService.On("BatchCreateDrivers", mock.Anything).Return([]*domain.Driver{drv}, nil)
 
-	err := handler.CreateDriver(c)
+	err := handler.CreateDrivers(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, rec.Code)
 	assert.Contains(t, rec.Body.String(), "d1")
+	assert.Contains(t, rec.Body.String(), "driver") // Single driver response
 	mockService.AssertExpectations(t)
 }
 
-func TestCreateDriver_InvalidJSON(t *testing.T) {
+// Çoklu driver creation
+func TestCreateDrivers_Batch_Success(t *testing.T) {
+	mockService := new(MockDriverService)
+	handler := NewDriverHandler(mockService)
+	e := echo.New()
+	body := `[{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}, {"id":"d2","location":{"type":"Point","coordinates":[30,42]}}]`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	drv1 := &domain.Driver{ID: "d1", Location: domain.NewPoint(29, 41)}
+	drv2 := &domain.Driver{ID: "d2", Location: domain.NewPoint(30, 42)}
+	mockService.On("BatchCreateDrivers", mock.Anything).Return([]*domain.Driver{drv1, drv2}, nil)
+
+	err := handler.CreateDrivers(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, rec.Code)
+	assert.Contains(t, rec.Body.String(), "d1")
+	assert.Contains(t, rec.Body.String(), "d2")
+	assert.Contains(t, rec.Body.String(), "drivers") // Batch response
+	mockService.AssertExpectations(t)
+}
+
+// Invalid JSON
+func TestCreateDrivers_InvalidJSON(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
 	e := echo.New()
@@ -74,53 +101,86 @@ func TestCreateDriver_InvalidJSON(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	err := handler.CreateDriver(c)
+	err := handler.CreateDrivers(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 	assert.Contains(t, rec.Body.String(), "Invalid request body")
 }
 
-func TestCreateDriver_ServiceError(t *testing.T) {
+// Service error
+func TestCreateDrivers_ServiceError(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
 	e := echo.New()
-	body := `{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}`
+	body := `[{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}]`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	mockService.On("CreateDriver", mock.Anything).Return((*domain.Driver)(nil), errors.New("db error"))
+	mockService.On("BatchCreateDrivers", mock.Anything).Return(([]*domain.Driver)(nil), errors.New("db error"))
 
-	err := handler.CreateDriver(c)
+	err := handler.CreateDrivers(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	assert.Contains(t, rec.Body.String(), "db error")
 	mockService.AssertExpectations(t)
 }
 
-func TestBatchCreateDrivers_Success(t *testing.T) {
+// Validation error (empty array)
+func TestCreateDrivers_ValidationError_EmptyArray(t *testing.T) {
 	mockService := new(MockDriverService)
 	handler := NewDriverHandler(mockService)
 	e := echo.New()
-	body := `{"drivers":[{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}, {"id":"d2","location":{"type":"Point","coordinates":[30,42]}}]}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers/batch", strings.NewReader(body))
+	body := `[]`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	drivers := []*domain.Driver{
-		{ID: "d1", Location: domain.NewPoint(29, 41)},
-		{ID: "d2", Location: domain.NewPoint(30, 42)},
-	}
-	mockService.On("BatchCreateDrivers", mock.Anything).Return(drivers, nil)
-
-	err := handler.BatchCreateDrivers(c)
+	err := handler.CreateDrivers(c)
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusCreated, rec.Code)
-	assert.Contains(t, rec.Body.String(), "d1")
-	assert.Contains(t, rec.Body.String(), "d2")
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Contains(t, rec.Body.String(), "At least one driver is required")
+}
+
+// Validation error (invalid driver)
+func TestCreateDrivers_ValidationError_InvalidDriver(t *testing.T) {
+	mockService := new(MockDriverService)
+	handler := NewDriverHandler(mockService)
+	e := echo.New()
+	body := `[{"id":"","location":{"type":"InvalidType","coordinates":[181,91]}}]` // Invalid data
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	validationErr := errors.New("validation error: invalid location type")
+	mockService.On("BatchCreateDrivers", mock.Anything).Return(([]*domain.Driver)(nil), validationErr)
+
+	err := handler.CreateDrivers(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Contains(t, rec.Body.String(), "internal_error")
 	mockService.AssertExpectations(t)
+}
+
+// Missing Content-Type
+func TestCreateDrivers_MissingContentType(t *testing.T) {
+	mockService := new(MockDriverService)
+	handler := NewDriverHandler(mockService)
+	e := echo.New()
+	body := `[{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}]`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
+	// Content-Type intentionally missing
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	// Content-Type eksik olduğunda Echo bind işlemi başarısız olur, 400 döner
+	err := handler.CreateDrivers(c)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Contains(t, rec.Body.String(), "Invalid request body")
 }
 
 func TestSearchNearbyDrivers_Success(t *testing.T) {
@@ -243,28 +303,6 @@ func TestDeleteDriver_Success(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-// TestCreateDriver_ValidationError tests validation error handling in CreateDriver
-// Expected: Should return 500 when validation fails (since service validation errors are treated as internal errors)
-func TestCreateDriver_ValidationError(t *testing.T) {
-	mockService := new(MockDriverService)
-	handler := NewDriverHandler(mockService)
-	e := echo.New()
-	body := `{"id":"","location":{"type":"InvalidType","coordinates":[181,91]}}` // Invalid data
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	validationErr := errors.New("validation error: invalid location type")
-	mockService.On("CreateDriver", mock.Anything).Return((*domain.Driver)(nil), validationErr)
-
-	err := handler.CreateDriver(c)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Contains(t, rec.Body.String(), "internal_error")
-	mockService.AssertExpectations(t)
-}
-
 // TestSearchNearbyDrivers_ValidationError tests validation error in search
 // Expected: Should return 500 when search validation fails
 func TestSearchNearbyDrivers_ValidationError(t *testing.T) {
@@ -308,44 +346,6 @@ func TestUpdateDriverLocation_ValidationError(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	assert.Contains(t, rec.Body.String(), "internal_error")
-	mockService.AssertExpectations(t)
-}
-
-// TestBatchCreateDrivers_InvalidJSON tests batch creation with invalid JSON
-// Expected: Should return 400 Bad Request when JSON is malformed
-func TestBatchCreateDrivers_InvalidJSON(t *testing.T) {
-	mockService := new(MockDriverService)
-	handler := NewDriverHandler(mockService)
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers/batch", strings.NewReader(`{"drivers":[{"id":"d1","location":invalid}]}`))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := handler.BatchCreateDrivers(c)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Invalid request body")
-}
-
-// TestBatchCreateDrivers_ServiceError tests batch creation when service fails
-// Expected: Should return 500 Internal Server Error when service returns error
-func TestBatchCreateDrivers_ServiceError(t *testing.T) {
-	mockService := new(MockDriverService)
-	handler := NewDriverHandler(mockService)
-	e := echo.New()
-	body := `{"drivers":[{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}]}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers/batch", strings.NewReader(body))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	mockService.On("BatchCreateDrivers", mock.Anything).Return(([]*domain.Driver)(nil), errors.New("database error"))
-
-	err := handler.BatchCreateDrivers(c)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Contains(t, rec.Body.String(), "database error")
 	mockService.AssertExpectations(t)
 }
 
@@ -465,24 +465,6 @@ func TestUpdateDriverLocation_InvalidJSON(t *testing.T) {
 	c.SetParamValues("d1")
 
 	err := handler.UpdateDriverLocation(c)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Invalid request body")
-}
-
-// TestCreateDriver_MissingContentType tests creation without Content-Type header
-// Expected: Should return 400 Bad Request since Echo cannot bind JSON without proper Content-Type
-func TestCreateDriver_MissingContentType(t *testing.T) {
-	mockService := new(MockDriverService)
-	handler := NewDriverHandler(mockService)
-	e := echo.New()
-	body := `{"id":"d1","location":{"type":"Point","coordinates":[29,41]}}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/drivers", strings.NewReader(body))
-	// Missing Content-Type header
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := handler.CreateDriver(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 	assert.Contains(t, rec.Body.String(), "Invalid request body")

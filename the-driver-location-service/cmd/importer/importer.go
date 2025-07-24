@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	apiURL = "http://localhost:8087/api/v1/drivers/batch"
+	apiURL = "http://localhost:8087/api/v1/drivers"
 	apiKey = getenvOrDefault("MATCHING_API_KEY", "changeme")
 )
 
@@ -154,8 +154,7 @@ func processBatchHTTP(batch []domain.CreateDriverRequest, workerID int) ImportRe
 		ErrorCount:     0,
 	}
 
-	batchReq := domain.BatchCreateRequest{Drivers: batch}
-	body, err := json.Marshal(batchReq)
+	body, err := json.Marshal(batch)
 	if err != nil {
 		log.Printf("Worker %d: JSON marshal error: %v", workerID, err)
 		result.ErrorCount = len(batch)

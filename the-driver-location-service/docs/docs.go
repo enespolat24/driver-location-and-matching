@@ -22,7 +22,7 @@ const docTemplate = `{
                         "X-API-KEY": []
                     }
                 ],
-                "description": "Create a new driver with location",
+                "description": "Create one or multiple drivers in a single request. Supports both single driver and batch operations.",
                 "consumes": [
                     "application/json"
                 ],
@@ -32,66 +32,18 @@ const docTemplate = `{
                 "tags": [
                     "drivers"
                 ],
-                "summary": "Create a driver",
+                "summary": "Create driver(s)",
                 "parameters": [
                     {
-                        "description": "Driver info",
-                        "name": "driver",
+                        "description": "Driver(s) info - send array with single element for one driver, multiple elements for batch",
+                        "name": "drivers",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.CreateDriverRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/http.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/drivers/batch": {
-            "post": {
-                "security": [
-                    {
-                        "X-API-KEY": []
-                    }
-                ],
-                "description": "Create multiple drivers in a single request",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "drivers"
-                ],
-                "summary": "Batch create drivers",
-                "parameters": [
-                    {
-                        "description": "Batch driver info",
-                        "name": "batch",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/domain.BatchCreateRequest"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.CreateDriverRequest"
+                            }
                         }
                     }
                 ],
@@ -397,21 +349,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.BatchCreateRequest": {
-            "type": "object",
-            "required": [
-                "drivers"
-            ],
-            "properties": {
-                "drivers": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "$ref": "#/definitions/domain.CreateDriverRequest"
-                    }
-                }
-            }
-        },
         "domain.CreateDriverRequest": {
             "type": "object",
             "required": [
