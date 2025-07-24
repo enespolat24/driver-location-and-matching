@@ -13,6 +13,8 @@ import (
 
 	"the-driver-location-service/internal/adapter/middleware"
 	"the-driver-location-service/internal/domain"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type mockDriverService struct{ mock.Mock }
@@ -52,9 +54,19 @@ func (m *mockDriverService) DeleteDriver(id string) error {
 	return args.Error(0)
 }
 
+// resetPrometheusRegistry resets the default Prometheus
+// registry to avoid duplicate collector registration in tests.
+// https://github.com/labstack/echo/discussions/2419
+// i'm not sure if this is the best way to do this
+func resetPrometheusRegistry() {
+	prometheus.DefaultRegisterer = prometheus.NewRegistry()
+	prometheus.DefaultGatherer = prometheus.DefaultRegisterer.(prometheus.Gatherer)
+}
+
 // TestNewRouter tests router creation with valid dependencies
 // Expected: Should create router with proper middleware and routes configured
 func TestNewRouter(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 
@@ -68,6 +80,7 @@ func TestNewRouter(t *testing.T) {
 // TestRouter_HealthCheck tests the health check endpoint
 // Expected: Should return 200 OK with health status information
 func TestRouter_HealthCheck(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -90,6 +103,7 @@ func TestRouter_HealthCheck(t *testing.T) {
 // TestRouter_CreateDriver_Success tests successful driver creation endpoint
 // Expected: Should return 201 Created with driver data when request is valid
 func TestRouter_CreateDriver_Success(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -123,6 +137,7 @@ func TestRouter_CreateDriver_Success(t *testing.T) {
 // TestRouter_CreateDriver_InvalidRequest tests driver creation with invalid request body
 // Expected: Should return 400 Bad Request when request body is malformed
 func TestRouter_CreateDriver_InvalidRequest(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -147,6 +162,7 @@ func TestRouter_CreateDriver_InvalidRequest(t *testing.T) {
 // TestRouter_CreateDriver_ServiceError tests driver creation when service returns error
 // Expected: Should return 500 Internal Server Error when service fails
 func TestRouter_CreateDriver_ServiceError(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -174,6 +190,7 @@ func TestRouter_CreateDriver_ServiceError(t *testing.T) {
 // TestRouter_BatchCreateDrivers_Success tests successful batch driver creation endpoint
 // Expected: Should return 201 Created with drivers array and count when request is valid
 func TestRouter_BatchCreateDrivers_Success(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -205,6 +222,7 @@ func TestRouter_BatchCreateDrivers_Success(t *testing.T) {
 // TestRouter_SearchNearbyDrivers_Success tests successful nearby driver search endpoint
 // Expected: Should return 200 OK with nearby drivers when request is valid
 func TestRouter_SearchNearbyDrivers_Success(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -236,6 +254,7 @@ func TestRouter_SearchNearbyDrivers_Success(t *testing.T) {
 // TestRouter_GetDriver_Success tests successful driver retrieval endpoint
 // Expected: Should return 200 OK with driver data when driver exists
 func TestRouter_GetDriver_Success(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -268,6 +287,7 @@ func TestRouter_GetDriver_Success(t *testing.T) {
 // TestRouter_GetDriver_NotFound tests driver retrieval when driver doesn't exist
 // Expected: Should return 404 Not Found when driver is not found
 func TestRouter_GetDriver_NotFound(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -290,6 +310,7 @@ func TestRouter_GetDriver_NotFound(t *testing.T) {
 // TestRouter_UpdateDriver_Success tests successful driver update endpoint
 // Expected: Should return 200 OK when driver update is successful
 func TestRouter_UpdateDriver_Success(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -319,6 +340,7 @@ func TestRouter_UpdateDriver_Success(t *testing.T) {
 // TestRouter_UpdateDriverLocation_Success tests successful driver location update endpoint
 // Expected: Should return 200 OK when location update is successful
 func TestRouter_UpdateDriverLocation_Success(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -345,6 +367,7 @@ func TestRouter_UpdateDriverLocation_Success(t *testing.T) {
 // TestRouter_DeleteDriver_Success tests successful driver deletion endpoint
 // Expected: Should return 200 OK when driver deletion is successful
 func TestRouter_DeleteDriver_Success(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -367,6 +390,7 @@ func TestRouter_DeleteDriver_Success(t *testing.T) {
 // TestRouter_DeleteDriver_NotFound tests driver deletion when driver doesn't exist
 // Expected: Should return 500 Internal Server Error when driver is not found
 func TestRouter_DeleteDriver_NotFound(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -389,6 +413,7 @@ func TestRouter_DeleteDriver_NotFound(t *testing.T) {
 // TestRouter_RoutesRegistration tests that all routes are properly registered
 // Expected: Should have all expected routes registered with correct HTTP methods
 func TestRouter_RoutesRegistration(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -428,6 +453,7 @@ func TestRouter_RoutesRegistration(t *testing.T) {
 // TestRouter_GetEcho tests that GetEcho returns the echo instance
 // Expected: Should return the echo instance used by the router
 func TestRouter_GetEcho(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -440,6 +466,7 @@ func TestRouter_GetEcho(t *testing.T) {
 // TestRouter_Shutdown tests router shutdown functionality
 // Expected: Should close the echo server without error
 func TestRouter_Shutdown(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
@@ -451,6 +478,7 @@ func TestRouter_Shutdown(t *testing.T) {
 // TestRouter_Start tests router start functionality
 // Expected: Should start the echo server and return error for invalid address
 func TestRouter_Start(t *testing.T) {
+	resetPrometheusRegistry()
 	mockService := new(mockDriverService)
 	authConfig := middleware.AuthConfig{MatchingAPIKey: "test-key"}
 	router := NewRouter(mockService, authConfig)
