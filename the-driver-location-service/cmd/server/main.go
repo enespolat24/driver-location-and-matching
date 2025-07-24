@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 	"time"
@@ -69,6 +71,13 @@ func main() {
 
 	var driverService primary.DriverService = application.NewDriverApplicationService(driverRepo, driverCache)
 
+	go func() {
+		if err := runDataImport(driverRepo, driverService); err != nil {
+			log.Printf("Warning: Data import failed: %v", err)
+			log.Println("Continuing without imported data...")
+		}
+	}()
+
 	authConfig := middleware.AuthConfig{
 		MatchingAPIKey: cfg.Auth.MatchingAPIKey,
 	}
@@ -105,4 +114,20 @@ func main() {
 	}
 
 	log.Println("Server exited")
+}
+
+func runDataImport(driverRepo secondary.DriverRepository, driverService primary.DriverService) error {
+	log.Println("Starting data import...")
+
+	cmd := exec.Command("./importer")
+	cmd.Dir = "/app" // Set working directory to app directory
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run importer: %v", err)
+	}
+
+	log.Println("Data import completed successfully.")
+	return nil
 }

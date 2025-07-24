@@ -78,7 +78,7 @@ func LoadConfig() (*Config, error) {
 			MatchingAPIKey: getEnv("MATCHING_API_KEY", "default-matching-api-key"),
 		},
 		App: AppConfig{
-			Environment: getEnv("ENVIRONMENT", "development"),
+			Environment: getEnv("ENVIRONMENT", "production"),
 		},
 	}
 
