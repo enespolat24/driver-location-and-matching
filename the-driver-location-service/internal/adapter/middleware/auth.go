@@ -8,20 +8,14 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-// AuthConfig holds authentication configuration
 type AuthConfig struct {
 	MatchingAPIKey string `json:"matching_api_key"`
 	RequireAuth    bool   `json:"require_auth"`
 }
 
-// APIKeyAuthMiddleware creates middleware for API key authentication
 func APIKeyAuthMiddleware(config AuthConfig) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			path := c.Request().URL.Path
-			if path == "/health" || path == "/" || strings.HasPrefix(path, "/swagger/") {
-				return next(c)
-			}
 
 			apiKey := c.Request().Header.Get("X-API-Key")
 			if apiKey == "" {
