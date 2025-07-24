@@ -23,7 +23,7 @@ var _ primary.DriverService = (*DriverApplicationService)(nil)
 
 const (
 	DriverCacheTTL = 1 * time.Minute
-	NearbyCacheTTL = 1 * time.Minute
+	NearbyCacheTTL = 30 * time.Second
 )
 
 func NewDriverApplicationService(repo secondary.DriverRepository, cache secondary.DriverCache) *DriverApplicationService {
@@ -56,10 +56,6 @@ func (s *DriverApplicationService) CreateDriver(req domain.CreateDriverRequest) 
 		if err := s.cache.Set(ctx, driver.ID, driver, DriverCacheTTL); err != nil {
 			fmt.Printf("Warning: failed to cache driver %s: %v\n", driver.ID, err)
 		}
-
-		if err := s.cache.InvalidateNearbyCache(ctx); err != nil {
-			fmt.Printf("Warning: failed to invalidate nearby cache: %v\n", err)
-		}
 	}
 
 	return driver, nil
@@ -83,13 +79,6 @@ func (s *DriverApplicationService) BatchCreateDrivers(req domain.BatchCreateRequ
 
 	if err := s.repo.BatchCreate(drivers); err != nil {
 		return nil, fmt.Errorf("failed to batch create drivers: %w", err)
-	}
-
-	ctx := context.Background()
-	if s.cache != nil {
-		if err := s.cache.InvalidateNearbyCache(ctx); err != nil {
-			fmt.Printf("Warning: failed to invalidate nearby cache: %v\n", err)
-		}
 	}
 
 	return drivers, nil
@@ -174,9 +163,6 @@ func (s *DriverApplicationService) DeleteDriver(id string) error {
 		if err := s.cache.Delete(ctx, id); err != nil {
 			fmt.Printf("Warning: failed to delete driver from cache: %v\n", err)
 		}
-		if err := s.cache.InvalidateNearbyCache(ctx); err != nil {
-			fmt.Printf("Warning: failed to invalidate nearby cache: %v\n", err)
-		}
 	}
 
 	return nil
@@ -208,9 +194,6 @@ func (s *DriverApplicationService) UpdateDriverLocation(id string, location doma
 		if err := s.cache.Delete(ctx, id); err != nil {
 			fmt.Printf("Warning: failed to delete driver from cache: %v\n", err)
 		}
-		if err := s.cache.InvalidateNearbyCache(ctx); err != nil {
-			fmt.Printf("Warning: failed to invalidate nearby cache: %v\n", err)
-		}
 	}
 
 	return nil
@@ -233,9 +216,6 @@ func (s *DriverApplicationService) UpdateDriver(driver *domain.Driver) error {
 	if s.cache != nil {
 		if err := s.cache.Delete(ctx, driver.ID); err != nil {
 			fmt.Printf("Warning: failed to delete driver from cache: %v\n", err)
-		}
-		if err := s.cache.InvalidateNearbyCache(ctx); err != nil {
-			fmt.Printf("Warning: failed to invalidate nearby cache: %v\n", err)
 		}
 	}
 

@@ -13,6 +13,5 @@ type DriverCache interface {
 	Delete(ctx context.Context, driverID string) error
 	GetNearbyDrivers(ctx context.Context, lat, lon, radius float64, limit int) ([]*domain.DriverWithDistance, error)
 	SetNearbyDrivers(ctx context.Context, lat, lon, radius float64, limit int, drivers []*domain.DriverWithDistance, ttl time.Duration) error
-	InvalidateNearbyCache(ctx context.Context) error
 	IsHealthy(ctx context.Context) bool
 }

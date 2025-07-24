@@ -128,24 +128,6 @@ func (c *RedisDriverCache) SetNearbyDrivers(ctx context.Context, lat, lon, radiu
 	return nil
 }
 
-func (c *RedisDriverCache) InvalidateNearbyCache(ctx context.Context) error {
-	pattern := "nearby:*"
-
-	keys, err := c.client.Keys(ctx, pattern).Result()
-	if err != nil {
-		return fmt.Errorf("failed to get nearby cache keys: %w", err)
-	}
-
-	if len(keys) > 0 {
-		err = c.client.Del(ctx, keys...).Err()
-		if err != nil {
-			return fmt.Errorf("failed to delete nearby cache keys: %w", err)
-		}
-	}
-
-	return nil
-}
-
 func (c *RedisDriverCache) IsHealthy(ctx context.Context) bool {
 	_, err := c.client.Ping(ctx).Result()
 	return err == nil

@@ -15,8 +15,6 @@ import (
 	"the-driver-location-service/internal/domain"
 )
 
-// todo: Maybe i can write some units test in future
-
 func setupRedisTestCache(t *testing.T) (*RedisDriverCache, func()) {
 	t.Helper()
 	ctx := context.Background()
@@ -81,18 +79,4 @@ func TestRedisDriverCache_SetGetNearbyDrivers(t *testing.T) {
 	assert.Len(t, got, 2)
 	assert.Equal(t, "d1", got[0].Driver.ID)
 	assert.Equal(t, "d2", got[1].Driver.ID)
-}
-
-func TestRedisDriverCache_InvalidateNearbyCache(t *testing.T) {
-	cache, cleanup := setupRedisTestCache(t)
-	defer cleanup()
-	ctx := context.Background()
-	lat, lon, radius, limit := 41.0, 29.0, 1000.0, 2
-	drivers := []*domain.DriverWithDistance{{Driver: domain.Driver{ID: "d1"}, Distance: 100}}
-	require.NoError(t, cache.SetNearbyDrivers(ctx, lat, lon, radius, limit, drivers, 10*time.Second))
-	// Invalidate
-	require.NoError(t, cache.InvalidateNearbyCache(ctx))
-	got, err := cache.GetNearbyDrivers(ctx, lat, lon, radius, limit)
-	require.NoError(t, err)
-	assert.Nil(t, got)
 }
