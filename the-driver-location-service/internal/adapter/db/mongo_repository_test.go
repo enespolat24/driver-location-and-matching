@@ -247,9 +247,9 @@ func TestMongoDriverRepository_BatchCreate_MixedIDs(t *testing.T) {
 
 	drivers := []*domain.Driver{
 		{ID: "explicit-id-1", Location: domain.NewPoint(70, 70)},
-		{ID: "", Location: domain.NewPoint(71, 71)}, // Empty ID
+		{ID: "", Location: domain.NewPoint(71, 71)},
 		{ID: "explicit-id-2", Location: domain.NewPoint(72, 72)},
-		{ID: "", Location: domain.NewPoint(73, 73)}, // Empty ID
+		{ID: "", Location: domain.NewPoint(73, 73)},
 	}
 
 	err := repo.BatchCreate(drivers)
