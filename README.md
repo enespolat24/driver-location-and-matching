@@ -18,30 +18,49 @@ Both APIs are built with clean, production-ready code and thorough error handlin
 
 API documentation is provided via OpenAPI, and unit/integration tests validate functionality. Additionally, a circuit breaker pattern is implemented to improve system resilience.
 
+## 📊 Test Coverage
+
+| Service | Coverage |
+|---------|----------|
+| **Driver Location Service** | 74.0%|
+| **Matching Service** | 82.4%  |
 
 ## Project Diagram
 ![Project diagram](diagram.png)
 
 # Quick Start
 
+## 🚀 Get Started in 30 Seconds
+
+```bash
+# 1. Run tests
+make test
+
+# 2. Start everything (copies .env files + starts services)
+make up
+
+# 3. Stop when done
+make down
+```
+
 ## 📚 API Documentation
 
 - **Driver Location Service**: http://localhost:8087/swagger/index.html
 - **Matching Service**: http://localhost:8088/swagger/index.html
 
+> 💡 **Tip**: Run `make swagger` to update API documentation after code changes
+
 
 ### Prerequisites
 - Docker
 - Docker Compose
+- Go (for local development and testing)
 
 ### Starting Services
 
 ```bash
-# Copy environment file
-cp .env.example .env
-
-# Start all services
-docker compose up -d
+# Setup environment and start all services (one command!)
+make up
 
 # Check status
 docker compose ps
@@ -62,7 +81,7 @@ do not forget to double check these from .env file
 
 ```bash
 # Stop all services
-docker compose down
+make down
 
 # Stop and remove volumes (WARNING: All data will be deleted!)
 docker compose down -v
@@ -79,6 +98,45 @@ docker compose logs -f matching-service
 
 # Run only database services
 docker compose up mongodb redis
+```
+
+## Development Commands
+
+### Available Make Commands
+
+```bash
+# Run tests for both services
+make test
+
+# Update swagger documentation for both services  
+make swagger
+
+# Setup environment and start all services
+make up
+
+# Stop all services
+make down
+```
+
+### Testing
+
+```bash
+# Run all tests
+make test
+
+# Run tests for specific service
+cd the-driver-location-service && go test ./...
+cd the-matching-service && go test ./...
+```
+
+### Documentation
+
+```bash
+# Update API documentation (requires swag tool)
+make swagger
+
+# Install swag tool if needed
+go install github.com/swaggo/swag/cmd/swag@latest
 ```
 
 ##  API Usage
