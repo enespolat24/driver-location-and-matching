@@ -26,8 +26,8 @@ API documentation is provided via OpenAPI, and unit/integration tests validate f
 
 ## 📚 API Documentation
 
-- **Driver Location Service**: http://localhost:3000/swagger/index.html
-- **Matching Service**: http://localhost:3001/swagger/index.html
+- **Driver Location Service**: http://localhost:8087/swagger/index.html
+- **Matching Service**: http://localhost:8088/swagger/index.html
 
 
 ### Prerequisites
