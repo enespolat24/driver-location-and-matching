@@ -26,6 +26,8 @@ func (m *mockDriverLocationService) FindNearbyDrivers(ctx context.Context, locat
 	}, nil
 }
 
+// TestRouter_HealthAndMatchEndpoints tests the /health and /api/v1/match endpoints.
+// Expected: /health returns 200 OK and 'healthy', /api/v1/match without JWT returns 401 Unauthorized.
 func TestRouter_HealthAndMatchEndpoints(t *testing.T) {
 	cfg := &config.Config{JWTSecret: "testsecret"}
 	mockService := &mockDriverLocationService{}
@@ -34,14 +36,12 @@ func TestRouter_HealthAndMatchEndpoints(t *testing.T) {
 	router := NewRouter(handler, cfg)
 	e := router.GetEcho()
 
-	// Test /health endpoint (should not require JWT)
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 	e.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "healthy")
 
-	// Test /api/v1/match endpoint without JWT (should return 401)
 	matchReq := httptest.NewRequest(http.MethodPost, "/api/v1/match", strings.NewReader(`{}`))
 	matchReq.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	matchW := httptest.NewRecorder()
