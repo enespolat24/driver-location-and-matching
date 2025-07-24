@@ -47,8 +47,7 @@ func (c *DriverLocationClient) FindNearbyDrivers(ctx context.Context, location d
 	}
 
 	var resp *http.Response
-	cbErr := error(nil)
-	_, err = c.breaker.Execute(func() (interface{}, error) {
+	result, err := c.breaker.Execute(func() (interface{}, error) {
 		req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/api/v1/drivers/search", bytes.NewReader(bodyBytes))
 		if err != nil {
 			return nil, err
@@ -66,13 +65,16 @@ func (c *DriverLocationClient) FindNearbyDrivers(ctx context.Context, location d
 			b, _ := io.ReadAll(resp.Body)
 			return nil, fmt.Errorf("unexpected status: %d, body: %s", resp.StatusCode, string(b))
 		}
-		return nil, nil
+		return resp, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	if cbErr != nil {
-		return nil, cbErr
+
+	// Type assert the response from circuit breaker
+	resp, ok := result.(*http.Response)
+	if !ok || resp == nil {
+		return nil, fmt.Errorf("invalid response type from circuit breaker")
 	}
 	defer resp.Body.Close()
 
