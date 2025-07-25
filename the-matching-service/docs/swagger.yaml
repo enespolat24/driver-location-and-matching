@@ -1,5 +1,15 @@
 basePath: /api/v1
 definitions:
+  domain.ErrorResponse:
+    properties:
+      details: {}
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
   domain.Location:
     description: GeoJSON Point location with longitude and latitude coordinates
     properties:
@@ -29,18 +39,13 @@ definitions:
     - location
     - radius
     type: object
-  domain.MatchResponse:
-    description: Response containing matched driver information
+  domain.SuccessResponse:
     properties:
-      distance:
-        example: 250.5
-        type: number
-      driver:
-        example: driver-123
+      data: {}
+      message:
         type: string
-      rider:
-        example: rider-456
-        type: string
+      success:
+        type: boolean
     type: object
 info:
   contact: {}
@@ -64,29 +69,25 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: 'Success: data contains MatchResponse'
           schema:
-            $ref: '#/definitions/domain.MatchResponse'
+            $ref: '#/definitions/domain.SuccessResponse'
         "400":
           description: Bad Request - Validation error or invalid request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/domain.ErrorResponse'
         "401":
           description: Unauthorized - User not authenticated
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/domain.ErrorResponse'
         "404":
           description: Not Found - No drivers found nearby
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/domain.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/domain.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Match rider with nearby driver

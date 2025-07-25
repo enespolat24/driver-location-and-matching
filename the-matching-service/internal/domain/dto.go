@@ -43,3 +43,51 @@ type DriverSearchData struct {
 	Count   int                  `json:"count"`
 	Drivers []DriverDistancePair `json:"drivers"`
 }
+
+// APIResponse is a consistent response wrapper for all API responses
+// Used for both success and error responses
+// Example:
+//
+//	{
+//	  "success": true,
+//	  "data": {...},
+//	  "error": "",
+//	  "message": "..."
+//	}
+type APIResponse struct {
+	Success bool        `json:"success"`
+	Data    interface{} `json:"data,omitempty"`
+	Error   string      `json:"error,omitempty"`
+	Message string      `json:"message,omitempty"`
+	Details interface{} `json:"details,omitempty"`
+}
+
+// SuccessResponse is used for successful API responses
+// Example:
+//
+//	{
+//	  "success": true,
+//	  "data": {...},
+//	  "message": "..."
+//	}
+type SuccessResponse struct {
+	Success bool        `json:"success"`
+	Data    interface{} `json:"data"`
+	Message string      `json:"message"`
+}
+
+// ErrorResponse is used for error API responses
+// Example:
+//
+//	{
+//	  "success": false,
+//	  "error": "...",
+//	  "message": "...",
+//	  "details": ...
+//	}
+type ErrorResponse struct {
+	Success bool        `json:"success"`
+	Error   string      `json:"error"`
+	Message string      `json:"message"`
+	Details interface{} `json:"details,omitempty"`
+}

@@ -46,37 +46,33 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Success: data contains MatchResponse",
                         "schema": {
-                            "$ref": "#/definitions/domain.MatchResponse"
+                            "$ref": "#/definitions/domain.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request - Validation error or invalid request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized - User not authenticated",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found - No drivers found nearby",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     }
                 }
@@ -108,6 +104,21 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "domain.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "details": {},
+                "error": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "domain.Location": {
             "description": "GeoJSON Point location with longitude and latitude coordinates",
             "type": "object",
@@ -149,21 +160,15 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.MatchResponse": {
-            "description": "Response containing matched driver information",
+        "domain.SuccessResponse": {
             "type": "object",
             "properties": {
-                "distance": {
-                    "type": "number",
-                    "example": 250.5
+                "data": {},
+                "message": {
+                    "type": "string"
                 },
-                "driver": {
-                    "type": "string",
-                    "example": "driver-123"
-                },
-                "rider": {
-                    "type": "string",
-                    "example": "rider-456"
+                "success": {
+                    "type": "boolean"
                 }
             }
         }

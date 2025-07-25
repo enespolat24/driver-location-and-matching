@@ -49,7 +49,7 @@ func generateJWT(secret string, claims jwt.MapClaims) string {
 }
 
 // TestMatchHandler_Success tests successful rider matching with valid request and authentication
-// Expected: HTTP 200 OK with driver match response containing driver ID
+// Expected: Should return 200 OK with success:true, data containing driver match, and message.
 func TestMatchHandler_Success(t *testing.T) {
 	cfg := &config.Config{JWTSecret: "testsecret"}
 	mockService := &mockDriverLocationServiceForHandler{}
@@ -74,9 +74,11 @@ func TestMatchHandler_Success(t *testing.T) {
 	e.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "driver-1")
-	assert.Contains(t, w.Body.String(), "user-1")
-	assert.Contains(t, w.Body.String(), "distance")
+	assert.Contains(t, w.Body.String(), `"success":true`)
+	assert.Contains(t, w.Body.String(), `"driver-1"`)
+	assert.Contains(t, w.Body.String(), `"user-1"`)
+	assert.Contains(t, w.Body.String(), `"distance"`)
+	assert.Contains(t, w.Body.String(), `"Matched successfully"`)
 }
 
 // TestMatchHandler_ValidationError tests validation error handling with invalid request data
