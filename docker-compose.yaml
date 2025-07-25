@@ -11,7 +11,6 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
       - driver-app-network
     healthcheck:
